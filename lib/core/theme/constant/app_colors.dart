@@ -11,5 +11,5 @@ class AppColors{
   static const Color lessImportant = Color(0xff999999);
   static const Color notification = Color(0xffff4d4d);
   static const Color containerBackgroundColor = Color(0xffd9d9d9);
-  static const Color shadowColor = Color(0xff55555);
+  static const Color shadowColor = Color(0xff555555);
 }
