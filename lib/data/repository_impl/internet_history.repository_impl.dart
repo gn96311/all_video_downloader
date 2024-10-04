@@ -1,12 +1,8 @@
 import 'package:all_video_downloader/data/common/response_wrapper.dart';
 import 'package:all_video_downloader/data/entity/internet_history.entity.dart';
-import 'package:all_video_downloader/data/entity/internet_tab.entity.dart';
 import 'package:all_video_downloader/data/local_storage/internet_history.dao.dart';
-import 'package:all_video_downloader/data/local_storage/internet_tab.dao.dart';
 import 'package:all_video_downloader/domain/model/internet_history/internet_history.model.dart';
-import 'package:all_video_downloader/domain/model/internet_tab/internet_tab.model.dart';
 import 'package:all_video_downloader/domain/repository_interface/internet_history.repository_interface.dart';
-import 'package:all_video_downloader/domain/repository_interface/internet_tab.repository_interface.dart';
 
 class InternetHistoryRepositoryImpl implements InternetHistoryRepositoryInterface{
   final InternetHistoryDao _internetHistoryDao;

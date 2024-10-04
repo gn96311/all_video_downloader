@@ -20,5 +20,3 @@ extension InternetHistoryModelEx on InternetHistoryModel{
     return InternetHistoryEntity(title: title, url: url, faviconPath: faviconPath, VisitedTime: VisitedTime);
   }
 }
-
-//TODO: index 또는 특정한 숫자(삭제할 때 필요한 요소) 추가하여 삭제 활성화.

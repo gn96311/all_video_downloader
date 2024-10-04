@@ -1,10 +1,8 @@
 import 'package:all_video_downloader/core/utils/error/error_response.dart';
 import 'package:all_video_downloader/core/utils/extensions.dart';
 import 'package:all_video_downloader/data/entity/internet_history.entity.dart';
-import 'package:all_video_downloader/data/entity/internet_tab.entity.dart';
 import 'package:all_video_downloader/domain/model/common/result.dart';
 import 'package:all_video_downloader/domain/repository_interface/internet_history.repository_interface.dart';
-import 'package:all_video_downloader/domain/repository_interface/internet_tab.repository_interface.dart';
 import 'package:all_video_downloader/domain/usecase/common/local.usecase.dart';
 import 'package:all_video_downloader/domain/usecase/common/usecase.dart';
 

@@ -1,8 +1,10 @@
 import 'package:all_video_downloader/core/theme/theme_data.dart';
+import 'package:all_video_downloader/data/entity/internet_bookmark.entity.dart';
 import 'package:all_video_downloader/data/entity/internet_history.entity.dart';
 import 'package:all_video_downloader/data/entity/internet_tab.entity.dart';
 import 'package:all_video_downloader/presentation/routes/routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,6 +15,8 @@ void main() async {
   await Hive.initFlutter(appDocumentDir.path);
   Hive.registerAdapter(InternetTabEntityAdapter());
   Hive.registerAdapter(InternetHistoryEntityAdapter());
+  Hive.registerAdapter(InternetBookmarkEntityAdapter());
+  await FlutterDownloader.initialize(debug: true);
   runApp(const ProviderScope(child: MainApp()));
 }
 

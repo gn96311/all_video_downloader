@@ -107,6 +107,7 @@ class InternetTabNotifier extends StateNotifier<InternetTabState> {
   }
 
   Future<void> deleteInternetTab(String tabId) async {
+    final isCurrentTab = state.currentTabId == tabId;
     final result = await _internetTabUsecase.execute(usecase: DeleteInternetUsecase(tabId: tabId));
     result.when(success: (data) async {
       List<InternetTabModel> tabList = data;
@@ -114,8 +115,12 @@ class InternetTabNotifier extends StateNotifier<InternetTabState> {
     }, failure: (error) {
       state = state.copyWith(error: error);
     });
-    if (state.tabList.isNotEmpty) {
-      setCurrentTabId(state.tabList.last.tabId);
+    if (isCurrentTab) {
+      if (state.tabList.isNotEmpty) {
+        setCurrentTabId(state.tabList.last.tabId);
+      } else {
+        state = state.copyWith(currentTabId: null, currentUrl: null);
+      }
     }
   }
 
