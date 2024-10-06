@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:all_video_downloader/core/utils/rest_client/rest_client.dart';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_hls_parser/flutter_hls_parser.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
@@ -13,10 +15,14 @@ import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 Future<Map<String, dynamic>> fetchAndStoreM3U8Response(List<String> m3u8UrlList, Map<String, String> headers) async {
   final dio = RestClient().getDio;
   Map<String, dynamic> responseMap = {};
-
-  for (String m3u8Url in m3u8UrlList) {
-    final response = await dio.get(m3u8Url, options: Options(headers: headers));
-    responseMap[m3u8Url] = response.data;
+  try{
+    for (String m3u8Url in m3u8UrlList) {
+      final response = await dio.get(
+          m3u8Url, options: Options(headers: headers));
+      responseMap[m3u8Url] = response.data;
+    }
+  } catch (e) {
+    print('영상을 클릭한 후, 다시 시도해주세요.');
   }
 
   return responseMap;
@@ -42,8 +48,10 @@ Future<List<Map<String, String>>> getStreamOptions(Map<String, dynamic> response
       // 비디오 스트림 추가
       for (final variant in playlist.variants) {
         final resolution = variant.format.height?.toString() ?? "unknown Resoluation";
-        final bandwidth = (variant.format.bitrate! / 1000).toStringAsFixed(0) + ' kbps';
+        final bandwidth =(variant.format.bitrate! / 1000).toStringAsFixed(0) + ' kbps';
         final codecs = variant.format.codecs ?? "unknown Codecs";
+        //final duration = playlist.durationUs! / 1000000 //TODO: GPT 답 밑 아래의 analyzeM3U8함수를 보고, 길이를 구해서 그를 통해 sizeInMB를 완성시켜야함.
+        //final sizeInMB =  ((variant.format.bitrate! / 8) * duration) / (1024 * 1024);
 
         videoStreamOptions.add({
           'url': variant.url.toString(),
@@ -52,6 +60,7 @@ Future<List<Map<String, String>>> getStreamOptions(Map<String, dynamic> response
           'codecs': codecs,
           'audio_group': variant.audioGroupId ?? '',
           'type': 'video',
+          'size': 'not yet',
         });
       }
 
@@ -100,12 +109,14 @@ Future<List<Map<String, String>>> getStreamOptions(Map<String, dynamic> response
       final playlist = await hlsParser.parseString(Uri.parse(m3u8Url), data);
 
       if (playlist is HlsMediaPlaylist) {
+
         combinedOptions.add({
           'url': m3u8Url,
           'resolution': "Unknown Resolution",
           'bandwidth': "Unknown Bandwidth",
           'codecs': "Unknown Codecs",
           'type': 'video',
+          'size' : 'Unknown Size',
         });
       }
     }
@@ -157,6 +168,7 @@ Future<void> convertVideo(Map<String, String?> selectedUrls, {String? title}) as
   }
 }
 
+//각 파일별 유니크한 이름을 return하는 함수
 String getUniqueFilePath(String basePath) {
   int counter = 1;
   String newFilePath = basePath;
@@ -167,14 +179,45 @@ String getUniqueFilePath(String basePath) {
   return newFilePath;
 }
 
+// currentUrl로부터 현재 baseUrl을 얻는 함수
+String getBaseUrl(String currentUrl) {
+  Uri uri = Uri.parse(currentUrl);
+  return '${uri.scheme}://${uri.host}';
+}
+
+//m3u8의 body를 받아서, 영상의 길이 및 세그먼트의 개수를 받는 함수.
+Future<Map<String, dynamic>> analyzeM3U8(String m3u8Content) async {
+  List<String> lines = LineSplitter().convert(m3u8Content);
+
+  double totalDuration = 0;
+  int segmentCount = 0;
+
+  for (var lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+    if (lines[lineNumber].startsWith('#EXTINF')) {
+      final duration = double.parse(lines[lineNumber].split(':')[1].split(',')[0]);
+      totalDuration += duration;
+      segmentCount++;
+    }
+  }
+  return {
+    'totalDuration' : totalDuration,
+    'segmentCount': segmentCount,
+  };
+}
+
 //----------------------------------- case2 -------------------------------------------------------
 
 Future<void> processM3U8(String m3u8Content, String outputFileName, Map<String, String> header) async {
+  // 혹시 https말고 http로 오는 곳이 있으면, 수정해야함.
   final segmentUrls = RegExp(r'https?://[^\s]+').allMatches(m3u8Content).map((m) => m.group(0)!).toList();
   await downloadAndMergeSegments(segmentUrls, outputFileName, header);
 }
 
+
+
 Future<void> downloadAndMergeSegments(List<String> segmentUrls, String outputFileName, Map<String, String> headers) async {
+  List<String> downloadTaskIds = [];
+
   final dio = RestClient().getDio;
   final directory = await getApplicationDocumentsDirectory();
   final segmentsDir = Directory('${directory.path}/downloadedSegments');
@@ -184,18 +227,23 @@ Future<void> downloadAndMergeSegments(List<String> segmentUrls, String outputFil
 
   List<String> segmentPaths = [];
 
-  for (String url in segmentUrls) {
+  for (int urlNumber = 0; urlNumber < segmentUrls.length; urlNumber++) {
+    String url = segmentUrls[urlNumber];
     final segmentName = url.split('/').last;
     final segmentNameWithNewExtension = '${segmentName.split('.').first}.ts';
     final segmentPath = '${segmentsDir.path}/$segmentNameWithNewExtension';
     segmentPaths.add(segmentPath);
 
-    try {
-      await dio.download(url, segmentPath, options: Options(headers: headers));
-      print('Downloaded $segmentPath');
-    } catch (e) {
-      print('Failed to download $url: $e');
-    }
+    final taskId = await FlutterDownloader.enqueue(
+        url: url,
+        savedDir: segmentsDir.path,
+      fileName: segmentNameWithNewExtension,
+      showNotification: true,
+      openFileFromNotification: false,
+      headers: headers
+    );
+
+    downloadTaskIds.add(taskId!);
   }
 
   await mergeSegments(segmentPaths, outputFileName);

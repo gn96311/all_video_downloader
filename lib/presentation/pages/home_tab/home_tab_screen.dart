@@ -4,7 +4,6 @@ import 'package:all_video_downloader/core/theme/constant/app_colors.dart';
 import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
 import 'package:all_video_downloader/core/theme/theme_data.dart';
 import 'package:all_video_downloader/data/remote/video_download.dart';
-import 'package:all_video_downloader/presentation/pages/home_tab/setting_screen.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/HLS_video_info/HLS_video_info.provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/jwplayer_video_info/jwplayer_video_info.provider.dart';
 import 'package:all_video_downloader/data/entity/internet_bookmark.entity.dart';
@@ -22,7 +21,6 @@ import 'package:all_video_downloader/presentation/pages/home_tab/provider/intern
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_history/internet_history.state.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_tab.provider.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/webview_screen.dart';
-import 'package:all_video_downloader/presentation/routes/route_path.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
