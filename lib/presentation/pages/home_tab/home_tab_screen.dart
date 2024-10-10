@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:all_video_downloader/core/theme/constant/app_colors.dart';
@@ -21,6 +22,7 @@ import 'package:all_video_downloader/presentation/pages/home_tab/provider/intern
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_history/internet_history.state.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_tab.provider.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/webview_screen.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -514,6 +516,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
           )
               : getWebviewScreen(currentUrl, currentTabId),
           floatingActionButton: FloatingActionButton(
+            //TODO: 클릭 시, 위로 버튼이 올라오면서 다운로드, provider 초기화 등이 선택 가능하게 변경.
             onPressed: isFabEnabled ? _onFabPressed : null,
             child: Icon(
               Icons.download,
@@ -530,9 +533,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     String? title = ref
         .watch(HlsVideoInfoProvider)
         .title;
-    String? thumbnail = ref
-        .watch(HlsVideoInfoProvider)
-        .thumbnail;
     List<String>? hlsUrls = ref
         .watch(HlsVideoInfoProvider)
         .hlsUrls;
@@ -567,7 +567,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                     // 비디오 옵션만 표시
                     return ListTile(
                         title: Text(
-                            '${option['resolution']} @ ${option['bandwidth']}'),
+                            '${option['resolution']} @ ${option['size']}'),
                         onTap: () {
                           // 일치하는 오디오 스트림 찾기
                           final matchingAudio = streamOptions.firstWhere(
@@ -801,7 +801,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   Future<void> hlsGetStreamFunction(List<String> hlsUrls, Map<String, String> headers, title) async {
     print('case1');
     Map<String, dynamic> responseMap = await fetchAndStoreM3U8Response(hlsUrls, headers);
-    List<Map<String, String>> streamOptions = await getStreamOptions(responseMap);
+    List<Map<String, String>> streamOptions = await getStreamOptions(responseMap, headers);
     final selectedUrls = await _showVideoSelectionDialog(streamOptions);
     if (selectedUrls.isEmpty){
       return;
@@ -818,12 +818,12 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
       m3u8Urls = otherFormatUrls.where((url) => url.endsWith('.js')).toList();
     }
     Map<String, dynamic> responseMap = await fetchAndStoreM3U8Response(m3u8Urls, headers);
-    List<Map<String, String>> streamOptions = await getStreamOptions(responseMap);
+    List<Map<String, String>> streamOptions = await getStreamOptions(responseMap, headers);
     final selectedUrls = await _showVideoSelectionDialog(streamOptions);
     if (selectedUrls.isEmpty){
       return;
     }
     final selectedData = responseMap[selectedUrls['videoUrl']];
-    await processM3U8(selectedData, title, headers);
+    await processM3U8(selectedData, title, headers, ref);
   }
 }

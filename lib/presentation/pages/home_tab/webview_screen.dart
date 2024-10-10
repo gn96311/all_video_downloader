@@ -105,7 +105,7 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
     ref.listen(internetTabListProvider, (previous, next) {
       if (previous?.currentUrl != next.currentUrl) {
         ref.read(JwPlayerVideoInfoProvider.notifier).state = JwplayerVideoInfo(inputUrls: [], headers: {});
-        ref.read(HlsVideoInfoProvider.notifier).state = HlsVideoInfo(hlsUrls: [], title: '', thumbnail: '');
+        ref.read(HlsVideoInfoProvider.notifier).state = HlsVideoInfo(hlsUrls: [], title: '');
         m3u8UrlList!.clear();
         jwplayerUrlList!.clear();
       }
@@ -165,19 +165,13 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                         entireTitle = '$title - $metaDescription';
                       }
 
-                      String jsCode = await rootBundle
-                          .loadString(AppScripts.videoThumbnailExtractor);
-                      String? thumbnailUrl =
-                          await controller.evaluateJavascript(source: jsCode);
-
                       if (mounted) {
                         ref
                             .read(HlsVideoInfoProvider.notifier)
                             .state =
                             HlsVideoInfo(
                                 hlsUrls: m3u8UrlList,
-                                title: entireTitle,
-                                thumbnail: thumbnailUrl ?? '');
+                                title: entireTitle,);
                       }
 
                       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -251,7 +245,7 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                         setState(() {
                           m3u8UrlList!.add(getUrl);
                         });
-                        ref.read(HlsVideoInfoProvider.notifier).state = HlsVideoInfo(hlsUrls: m3u8UrlList, title: ref.read(HlsVideoInfoProvider).title, thumbnail: ref.read(HlsVideoInfoProvider).thumbnail);
+                        ref.read(HlsVideoInfoProvider.notifier).state = HlsVideoInfo(hlsUrls: m3u8UrlList, title: ref.read(HlsVideoInfoProvider).title);
                       }
                       if (getUrl.endsWith(".html") || getUrl.endsWith(".js")) {
                         if (!shouldIgnoreFile(getUrl)){

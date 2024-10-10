@@ -13,12 +13,10 @@ _$HlsVideoInfoImpl _$$HlsVideoInfoImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       title: json['title'] as String? ?? '',
-      thumbnail: json['thumbnail'] as String? ?? '',
     );
 
 Map<String, dynamic> _$$HlsVideoInfoImplToJson(_$HlsVideoInfoImpl instance) =>
     <String, dynamic>{
       'hlsUrls': instance.hlsUrls,
       'title': instance.title,
-      'thumbnail': instance.thumbnail,
     };

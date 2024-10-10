@@ -22,7 +22,6 @@ HlsVideoInfo _$HlsVideoInfoFromJson(Map<String, dynamic> json) {
 mixin _$HlsVideoInfo {
   List<String>? get hlsUrls => throw _privateConstructorUsedError;
   String? get title => throw _privateConstructorUsedError;
-  String? get thumbnail => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -36,7 +35,7 @@ abstract class $HlsVideoInfoCopyWith<$Res> {
           HlsVideoInfo value, $Res Function(HlsVideoInfo) then) =
       _$HlsVideoInfoCopyWithImpl<$Res, HlsVideoInfo>;
   @useResult
-  $Res call({List<String>? hlsUrls, String? title, String? thumbnail});
+  $Res call({List<String>? hlsUrls, String? title});
 }
 
 /// @nodoc
@@ -54,7 +53,6 @@ class _$HlsVideoInfoCopyWithImpl<$Res, $Val extends HlsVideoInfo>
   $Res call({
     Object? hlsUrls = freezed,
     Object? title = freezed,
-    Object? thumbnail = freezed,
   }) {
     return _then(_value.copyWith(
       hlsUrls: freezed == hlsUrls
@@ -64,10 +62,6 @@ class _$HlsVideoInfoCopyWithImpl<$Res, $Val extends HlsVideoInfo>
       title: freezed == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
-              as String?,
-      thumbnail: freezed == thumbnail
-          ? _value.thumbnail
-          : thumbnail // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -81,7 +75,7 @@ abstract class _$$HlsVideoInfoImplCopyWith<$Res>
       __$$HlsVideoInfoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({List<String>? hlsUrls, String? title, String? thumbnail});
+  $Res call({List<String>? hlsUrls, String? title});
 }
 
 /// @nodoc
@@ -97,7 +91,6 @@ class __$$HlsVideoInfoImplCopyWithImpl<$Res>
   $Res call({
     Object? hlsUrls = freezed,
     Object? title = freezed,
-    Object? thumbnail = freezed,
   }) {
     return _then(_$HlsVideoInfoImpl(
       hlsUrls: freezed == hlsUrls
@@ -108,10 +101,6 @@ class __$$HlsVideoInfoImplCopyWithImpl<$Res>
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
               as String?,
-      thumbnail: freezed == thumbnail
-          ? _value.thumbnail
-          : thumbnail // ignore: cast_nullable_to_non_nullable
-              as String?,
     ));
   }
 }
@@ -120,9 +109,7 @@ class __$$HlsVideoInfoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$HlsVideoInfoImpl implements _HlsVideoInfo {
   const _$HlsVideoInfoImpl(
-      {final List<String>? hlsUrls = const [],
-      this.title = '',
-      this.thumbnail = ''})
+      {final List<String>? hlsUrls = const [], this.title = ''})
       : _hlsUrls = hlsUrls;
 
   factory _$HlsVideoInfoImpl.fromJson(Map<String, dynamic> json) =>
@@ -142,13 +129,10 @@ class _$HlsVideoInfoImpl implements _HlsVideoInfo {
   @override
   @JsonKey()
   final String? title;
-  @override
-  @JsonKey()
-  final String? thumbnail;
 
   @override
   String toString() {
-    return 'HlsVideoInfo(hlsUrls: $hlsUrls, title: $title, thumbnail: $thumbnail)';
+    return 'HlsVideoInfo(hlsUrls: $hlsUrls, title: $title)';
   }
 
   @override
@@ -157,15 +141,13 @@ class _$HlsVideoInfoImpl implements _HlsVideoInfo {
         (other.runtimeType == runtimeType &&
             other is _$HlsVideoInfoImpl &&
             const DeepCollectionEquality().equals(other._hlsUrls, _hlsUrls) &&
-            (identical(other.title, title) || other.title == title) &&
-            (identical(other.thumbnail, thumbnail) ||
-                other.thumbnail == thumbnail));
+            (identical(other.title, title) || other.title == title));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(_hlsUrls), title, thumbnail);
+  int get hashCode => Object.hash(
+      runtimeType, const DeepCollectionEquality().hash(_hlsUrls), title);
 
   @JsonKey(ignore: true)
   @override
@@ -183,9 +165,7 @@ class _$HlsVideoInfoImpl implements _HlsVideoInfo {
 
 abstract class _HlsVideoInfo implements HlsVideoInfo {
   const factory _HlsVideoInfo(
-      {final List<String>? hlsUrls,
-      final String? title,
-      final String? thumbnail}) = _$HlsVideoInfoImpl;
+      {final List<String>? hlsUrls, final String? title}) = _$HlsVideoInfoImpl;
 
   factory _HlsVideoInfo.fromJson(Map<String, dynamic> json) =
       _$HlsVideoInfoImpl.fromJson;
@@ -194,8 +174,6 @@ abstract class _HlsVideoInfo implements HlsVideoInfo {
   List<String>? get hlsUrls;
   @override
   String? get title;
-  @override
-  String? get thumbnail;
   @override
   @JsonKey(ignore: true)
   _$$HlsVideoInfoImplCopyWith<_$HlsVideoInfoImpl> get copyWith =>

@@ -1,6 +1,5 @@
 import 'package:all_video_downloader/data/common/response_wrapper.dart';
 import 'package:all_video_downloader/data/entity/internet_history.entity.dart';
-import 'package:all_video_downloader/data/entity/internet_tab.entity.dart';
 import 'package:hive/hive.dart';
 
 const String _internetHistoryDB = 'INTERNET_HISTORY_DB';
