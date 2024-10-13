@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -20,20 +22,22 @@ class SegmentDownloader {
   DateTime previousTime = DateTime.now();
   double previousDownloadedBytes = 0.0;
   String outputFileName;
+  String? firstSegmentTaskId;
+  var downloadCompleterUUID = const Uuid().toString();
+  WidgetRef ref;
 
-  static final Map<String, DownloadTaskStatus> _taskStatusMap = {};
-  static final Map<String, Completer<void>> _taskCompleters = {};
+  final Map<String, DownloadTaskStatus> _taskStatusMap = {};
+  final Map<String, Completer<void>> _taskCompleters = {};
 
   SegmentDownloader({
     required this.urlToSegmentPathMap,
     required this.headers,
     required this.saveDir,
     required this.outputFileName,
+    required this.ref,
   });
 
-  Future<void> startDownload(WidgetRef ref) async {
-    var downloadCompleterUUID = Uuid().toString();
-    ref.read(VideoDownloadProgressProvider.notifier).insertNewDownloadQueue(urlToSegmentPathMap.keys.toList(), downloadCompleterUUID, outputFileName);
+  Future<void> startDownload() async {
     final completer = Completer<void>();
     _taskCompleters[downloadCompleterUUID] = completer;
     Map<String, int> segmentProgressMap = {};
@@ -50,6 +54,7 @@ class SegmentDownloader {
       );
       _taskStatusMap[taskId!] = DownloadTaskStatus.undefined;
       segmentDownloadIds.add(taskId!);
+      firstSegmentTaskId ??= taskId;
     }
 
     final port = IsolateNameServer.lookupPortByName('downloader_send_port') as ReceivePort;
@@ -61,7 +66,13 @@ class SegmentDownloader {
 
       segmentProgressMap[id] = progress;
       _taskStatusMap[id] = taskStatus;
-      
+
+      if (id == firstSegmentTaskId && taskStatus == DownloadTaskStatus.complete) {
+        final firstSegmentPath = '$saveDir/${urlToSegmentPathMap.entries.firstWhere((e) => e.key == firstSegmentTaskId).value}';
+        String thumbnail = await generateThumbnail(firstSegmentPath);
+        ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, thumbnail, null, null, null, null);
+      }
+
       final filePath = '$saveDir/${urlToSegmentPathMap.entries.firstWhere((e) => e.key == id).value}';
       final file = File(filePath);
       if (file.existsSync()) {
@@ -89,6 +100,17 @@ class SegmentDownloader {
       }
     });
     await completer.future;
+  }
+
+  Future<String> generateThumbnail(String segmentPath) async {
+    String command = '-i $segmentPath -ss 00:00:01 -vframes 1 $saveDir/thumbnail.jpg';
+    try {
+      await FFmpegKit.execute(command);
+      return '$saveDir/thumbnail.jpg';
+    } catch (e) {
+      String noThumbnailImage = AppIcons.noThumbnail;
+      return noThumbnailImage;
+    }
   }
 
   double? calculateDownloadSpeed(double currentDownloadedBytes) {
@@ -122,7 +144,7 @@ class SegmentDownloader {
 
   Future<void> resumeDownload() async {
     for (String taskId in segmentDownloadIds) {
-      await FlutterDownloader.resume(taskId: taskId);
+    await FlutterDownloader.resume(taskId: taskId);
     }
   }
 

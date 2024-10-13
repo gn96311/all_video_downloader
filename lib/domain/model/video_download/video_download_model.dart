@@ -8,7 +8,9 @@ class VideoDownloadModel with _$VideoDownloadModel {
   const factory VideoDownloadModel({
     required String id,
     required String title,
-    required List<String> segmentUrls,
+    required Map<String, String?> selectedUrls,
+    required Map<String, dynamic> responseMap,
+    required Map<String, String> headers,
     required String backgroundImageUrl,
     required double downloadedSized,
     required double downloadSpeed,

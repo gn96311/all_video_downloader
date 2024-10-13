@@ -18,7 +18,9 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$VideoDownloadModel {
   String get id => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
-  List<String> get segmentUrls => throw _privateConstructorUsedError;
+  Map<String, String?> get selectedUrls => throw _privateConstructorUsedError;
+  Map<String, dynamic> get responseMap => throw _privateConstructorUsedError;
+  Map<String, String> get headers => throw _privateConstructorUsedError;
   String get backgroundImageUrl => throw _privateConstructorUsedError;
   double get downloadedSized => throw _privateConstructorUsedError;
   double get downloadSpeed => throw _privateConstructorUsedError;
@@ -39,7 +41,9 @@ abstract class $VideoDownloadModelCopyWith<$Res> {
   $Res call(
       {String id,
       String title,
-      List<String> segmentUrls,
+      Map<String, String?> selectedUrls,
+      Map<String, dynamic> responseMap,
+      Map<String, String> headers,
       String backgroundImageUrl,
       double downloadedSized,
       double downloadSpeed,
@@ -62,7 +66,9 @@ class _$VideoDownloadModelCopyWithImpl<$Res, $Val extends VideoDownloadModel>
   $Res call({
     Object? id = null,
     Object? title = null,
-    Object? segmentUrls = null,
+    Object? selectedUrls = null,
+    Object? responseMap = null,
+    Object? headers = null,
     Object? backgroundImageUrl = null,
     Object? downloadedSized = null,
     Object? downloadSpeed = null,
@@ -78,10 +84,18 @@ class _$VideoDownloadModelCopyWithImpl<$Res, $Val extends VideoDownloadModel>
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
-      segmentUrls: null == segmentUrls
-          ? _value.segmentUrls
-          : segmentUrls // ignore: cast_nullable_to_non_nullable
-              as List<String>,
+      selectedUrls: null == selectedUrls
+          ? _value.selectedUrls
+          : selectedUrls // ignore: cast_nullable_to_non_nullable
+              as Map<String, String?>,
+      responseMap: null == responseMap
+          ? _value.responseMap
+          : responseMap // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      headers: null == headers
+          ? _value.headers
+          : headers // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
       backgroundImageUrl: null == backgroundImageUrl
           ? _value.backgroundImageUrl
           : backgroundImageUrl // ignore: cast_nullable_to_non_nullable
@@ -117,7 +131,9 @@ abstract class _$$VideoDownloadModelImplCopyWith<$Res>
   $Res call(
       {String id,
       String title,
-      List<String> segmentUrls,
+      Map<String, String?> selectedUrls,
+      Map<String, dynamic> responseMap,
+      Map<String, String> headers,
       String backgroundImageUrl,
       double downloadedSized,
       double downloadSpeed,
@@ -138,7 +154,9 @@ class __$$VideoDownloadModelImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? title = null,
-    Object? segmentUrls = null,
+    Object? selectedUrls = null,
+    Object? responseMap = null,
+    Object? headers = null,
     Object? backgroundImageUrl = null,
     Object? downloadedSized = null,
     Object? downloadSpeed = null,
@@ -154,10 +172,18 @@ class __$$VideoDownloadModelImplCopyWithImpl<$Res>
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
-      segmentUrls: null == segmentUrls
-          ? _value._segmentUrls
-          : segmentUrls // ignore: cast_nullable_to_non_nullable
-              as List<String>,
+      selectedUrls: null == selectedUrls
+          ? _value._selectedUrls
+          : selectedUrls // ignore: cast_nullable_to_non_nullable
+              as Map<String, String?>,
+      responseMap: null == responseMap
+          ? _value._responseMap
+          : responseMap // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      headers: null == headers
+          ? _value._headers
+          : headers // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
       backgroundImageUrl: null == backgroundImageUrl
           ? _value.backgroundImageUrl
           : backgroundImageUrl // ignore: cast_nullable_to_non_nullable
@@ -188,24 +214,44 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
   const _$VideoDownloadModelImpl(
       {required this.id,
       required this.title,
-      required final List<String> segmentUrls,
+      required final Map<String, String?> selectedUrls,
+      required final Map<String, dynamic> responseMap,
+      required final Map<String, String> headers,
       required this.backgroundImageUrl,
       required this.downloadedSized,
       required this.downloadSpeed,
       required this.downloadProgress,
       required this.downloadStatus})
-      : _segmentUrls = segmentUrls;
+      : _selectedUrls = selectedUrls,
+        _responseMap = responseMap,
+        _headers = headers;
 
   @override
   final String id;
   @override
   final String title;
-  final List<String> _segmentUrls;
+  final Map<String, String?> _selectedUrls;
   @override
-  List<String> get segmentUrls {
-    if (_segmentUrls is EqualUnmodifiableListView) return _segmentUrls;
+  Map<String, String?> get selectedUrls {
+    if (_selectedUrls is EqualUnmodifiableMapView) return _selectedUrls;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_segmentUrls);
+    return EqualUnmodifiableMapView(_selectedUrls);
+  }
+
+  final Map<String, dynamic> _responseMap;
+  @override
+  Map<String, dynamic> get responseMap {
+    if (_responseMap is EqualUnmodifiableMapView) return _responseMap;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_responseMap);
+  }
+
+  final Map<String, String> _headers;
+  @override
+  Map<String, String> get headers {
+    if (_headers is EqualUnmodifiableMapView) return _headers;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_headers);
   }
 
   @override
@@ -221,7 +267,7 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
 
   @override
   String toString() {
-    return 'VideoDownloadModel(id: $id, title: $title, segmentUrls: $segmentUrls, backgroundImageUrl: $backgroundImageUrl, downloadedSized: $downloadedSized, downloadSpeed: $downloadSpeed, downloadProgress: $downloadProgress, downloadStatus: $downloadStatus)';
+    return 'VideoDownloadModel(id: $id, title: $title, selectedUrls: $selectedUrls, responseMap: $responseMap, headers: $headers, backgroundImageUrl: $backgroundImageUrl, downloadedSized: $downloadedSized, downloadSpeed: $downloadSpeed, downloadProgress: $downloadProgress, downloadStatus: $downloadStatus)';
   }
 
   @override
@@ -232,7 +278,10 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.title, title) || other.title == title) &&
             const DeepCollectionEquality()
-                .equals(other._segmentUrls, _segmentUrls) &&
+                .equals(other._selectedUrls, _selectedUrls) &&
+            const DeepCollectionEquality()
+                .equals(other._responseMap, _responseMap) &&
+            const DeepCollectionEquality().equals(other._headers, _headers) &&
             (identical(other.backgroundImageUrl, backgroundImageUrl) ||
                 other.backgroundImageUrl == backgroundImageUrl) &&
             (identical(other.downloadedSized, downloadedSized) ||
@@ -250,7 +299,9 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
       runtimeType,
       id,
       title,
-      const DeepCollectionEquality().hash(_segmentUrls),
+      const DeepCollectionEquality().hash(_selectedUrls),
+      const DeepCollectionEquality().hash(_responseMap),
+      const DeepCollectionEquality().hash(_headers),
       backgroundImageUrl,
       downloadedSized,
       downloadSpeed,
@@ -269,7 +320,9 @@ abstract class _VideoDownloadModel implements VideoDownloadModel {
   const factory _VideoDownloadModel(
           {required final String id,
           required final String title,
-          required final List<String> segmentUrls,
+          required final Map<String, String?> selectedUrls,
+          required final Map<String, dynamic> responseMap,
+          required final Map<String, String> headers,
           required final String backgroundImageUrl,
           required final double downloadedSized,
           required final double downloadSpeed,
@@ -282,7 +335,11 @@ abstract class _VideoDownloadModel implements VideoDownloadModel {
   @override
   String get title;
   @override
-  List<String> get segmentUrls;
+  Map<String, String?> get selectedUrls;
+  @override
+  Map<String, dynamic> get responseMap;
+  @override
+  Map<String, String> get headers;
   @override
   String get backgroundImageUrl;
   @override

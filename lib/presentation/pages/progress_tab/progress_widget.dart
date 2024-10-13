@@ -1,27 +1,36 @@
 import 'package:all_video_downloader/core/theme/constant/app_colors.dart';
-import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
 import 'package:all_video_downloader/core/theme/theme_data.dart';
 import 'package:all_video_downloader/core/utils/widgets/shadow_container.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/progress_state_provider.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-class ProgressWidget extends StatelessWidget {
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class ProgressWidget extends ConsumerWidget {
+  String uuid;
   String title;
-  double entireVolume;
-  double downloadedVolume;
-  ProgressState progressState;
+  String thumbnailPath;
+  double downloadedSize;
+  double downloadSpeed;
+  double downloadProgress;
+  DownloadTaskStatus downloadStatus;
 
   ProgressWidget(
       {super.key,
+        required this.uuid,
       required this.title,
-      required this.entireVolume,
-      required this.downloadedVolume,
-      required this.progressState});
+      required this.thumbnailPath,
+      required this.downloadedSize,
+      required this.downloadSpeed,
+      required this.downloadProgress,
+      required this.downloadStatus,});
 
   @override
-  Widget build(BuildContext context) {
-    int calculatedPercent = ((downloadedVolume / entireVolume) * 100).toInt();
+  Widget build(BuildContext context, WidgetRef ref) {
+    int calculatedPercent = downloadProgress.toInt();
     return ShadowContainerWidget(
       outsidePadding: EdgeInsets.zero,
       insidePadding: EdgeInsets.zero,
@@ -32,7 +41,7 @@ class ProgressWidget extends StatelessWidget {
         child: Row(
           children: [
             Image.asset(
-              AppIcons.exampleImage,
+              thumbnailPath,
               height: 88,
               width: 120,
             ),
@@ -55,12 +64,16 @@ class ProgressWidget extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: 5,),
-                      Transform.rotate(
-                        angle: math.pi / 4,
-                        child: Icon(
-                          Icons.add,
-                          size: 24,
-                          color: AppColors.primary,
+                      GestureDetector(
+                        onTap: () {
+                        },
+                        child: Transform.rotate(
+                          angle: math.pi / 4,
+                          child: Icon(
+                            Icons.add,
+                            size: 24,
+                            color: AppColors.primary,
+                          ),
                         ),
                       )
                     ],
