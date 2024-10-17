@@ -28,9 +28,21 @@ void main() async {
   runApp(const ProviderScope(child: MainApp()));
 }
 
+DateTime? lastSendTime;
+
 void downloadCallback(String id, int status, int progress) {
-  final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
-  send?.send([id, status, progress]);
+  if (sendCallbackData()) {
+    final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
+    send?.send([id, status, progress]);
+  }
+}
+
+bool sendCallbackData() {
+  if (lastSendTime == null || DateTime.now().difference(lastSendTime!).inMilliseconds >= 500) {
+    lastSendTime = DateTime.now();
+    return true;
+  }
+  return false;
 }
 
 class MainApp extends StatelessWidget {

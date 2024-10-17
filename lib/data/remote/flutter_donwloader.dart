@@ -23,13 +23,14 @@ class SegmentDownloader {
   double previousDownloadedBytes = 0.0;
   String outputFileName;
   String? firstSegmentTaskId;
-  var downloadCompleterUUID = const Uuid().toString();
+  String downloadCompleterUUID;
   WidgetRef ref;
 
   final Map<String, DownloadTaskStatus> _taskStatusMap = {};
   final Map<String, Completer<void>> _taskCompleters = {};
 
   SegmentDownloader({
+    required this.downloadCompleterUUID,
     required this.urlToSegmentPathMap,
     required this.headers,
     required this.saveDir,
@@ -83,19 +84,23 @@ class SegmentDownloader {
       //다운로드 속도
       downloadSpeed = calculateDownloadSpeed(totalDownloadedSize) ?? 0;
 
-      int totalProgress = segmentProgressMap.values.fold(0, (sum, p) => sum + p);
+      double totalProgress = segmentProgressMap.values.fold(0, (sum, p) => sum + p);
       // 전체 진행도
       double overallProgress = totalProgress / totalSegmentsLength;
 
-      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, downloadSpeed, overallProgress, DownloadTaskStatus.enqueued);
+      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, downloadSpeed, overallProgress, DownloadTaskStatus.running);
 
-
-      // TODO: 다운로드 uuid를 통해, 상태 변경까지 설정함.
-      // TODO: 멈췄을때, 캔슬했을 때의 REF도 다 설정해야함.
-      // TODO: 설정 전, 일단 잘 작동하는지 확인해야함.
-      if (_taskStatusMap.values.every((status) => status == DownloadTaskStatus.complete || status == DownloadTaskStatus.failed || status == DownloadTaskStatus.canceled)) {
-        _taskCompleters[id]?.complete();
+      if (_taskStatusMap.values.every((status) => status == DownloadTaskStatus.complete)) {
         ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, 0, 100, DownloadTaskStatus.complete);
+        _taskCompleters[id]?.complete();
+        _taskCompleters.remove(id);
+      } else if (_taskStatusMap.values.any((status) => status == DownloadTaskStatus.failed)) {
+        ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, 0, overallProgress, DownloadTaskStatus.failed);
+        _taskCompleters[id]?.complete();
+        _taskCompleters.remove(id);
+      } else if (_taskStatusMap.values.any((status) => status == DownloadTaskStatus.canceled)) {
+        ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, 0, overallProgress, DownloadTaskStatus.canceled);
+        _taskCompleters[id]?.complete();
         _taskCompleters.remove(id);
       }
     });

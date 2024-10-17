@@ -2,13 +2,17 @@ import 'package:all_video_downloader/core/theme/constant/app_colors.dart';
 import 'package:all_video_downloader/core/theme/theme_data.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/progress_state_provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/progress_widget.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProgressTabScreen extends StatelessWidget {
+class ProgressTabScreen extends ConsumerWidget {
   const ProgressTabScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final downloadInformationList =
+        ref.watch(VideoDownloadProgressProvider).informationList;
     return SafeArea(
       child: Scaffold(
         appBar: PreferredSize(
@@ -143,12 +147,31 @@ class ProgressTabScreen extends StatelessWidget {
         ),
         body: Padding(
           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: ProgressWidget(
-            title: 'Title of Video if has long name, describe like this.',
-            downloadedVolume: 75.05,
-            entireVolume: 120.02,
-            progressState: ProgressState.downloading,
+          child: Column(
+            children: [
+              Expanded(
+                  child: ListView.builder(
+                itemBuilder: (context, index) {
+                  final item = downloadInformationList[index];
+                  return ProgressWidget(
+                      uuid: item.id,
+                      title: item.title,
+                      thumbnailPath: item.backgroundImageUrl,
+                      downloadedSize: item.downloadedSized,
+                      downloadSpeed: item.downloadSpeed,
+                      downloadProgress: item.downloadProgress,
+                      downloadStatus: item.downloadStatus);
+                },
+                itemCount: downloadInformationList.length,
+              ))
+            ],
           ),
+          // child: ProgressWidget(
+          //   title: 'Title of Video if has long name, describe like this.',
+          //   downloadedVolume: 75.05,
+          //   entireVolume: 120.02,
+          //   progressState: ProgressState.downloading,
+          // ),
         ),
       ),
     );

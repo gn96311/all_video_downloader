@@ -16,8 +16,9 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$VideoDownloadProgressState {
-  List<VideoDownloadModel> get downloadList =>
+  List<VideoDownloadModel> get informationList =>
       throw _privateConstructorUsedError;
+  List<DownloadManager> get downloadList => throw _privateConstructorUsedError;
   ErrorResponse get error => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -32,7 +33,10 @@ abstract class $VideoDownloadProgressStateCopyWith<$Res> {
       _$VideoDownloadProgressStateCopyWithImpl<$Res,
           VideoDownloadProgressState>;
   @useResult
-  $Res call({List<VideoDownloadModel> downloadList, ErrorResponse error});
+  $Res call(
+      {List<VideoDownloadModel> informationList,
+      List<DownloadManager> downloadList,
+      ErrorResponse error});
 }
 
 /// @nodoc
@@ -49,14 +53,19 @@ class _$VideoDownloadProgressStateCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? informationList = null,
     Object? downloadList = null,
     Object? error = null,
   }) {
     return _then(_value.copyWith(
+      informationList: null == informationList
+          ? _value.informationList
+          : informationList // ignore: cast_nullable_to_non_nullable
+              as List<VideoDownloadModel>,
       downloadList: null == downloadList
           ? _value.downloadList
           : downloadList // ignore: cast_nullable_to_non_nullable
-              as List<VideoDownloadModel>,
+              as List<DownloadManager>,
       error: null == error
           ? _value.error
           : error // ignore: cast_nullable_to_non_nullable
@@ -74,7 +83,10 @@ abstract class _$$VideoDownloadProgressStateImplCopyWith<$Res>
       __$$VideoDownloadProgressStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({List<VideoDownloadModel> downloadList, ErrorResponse error});
+  $Res call(
+      {List<VideoDownloadModel> informationList,
+      List<DownloadManager> downloadList,
+      ErrorResponse error});
 }
 
 /// @nodoc
@@ -90,14 +102,19 @@ class __$$VideoDownloadProgressStateImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? informationList = null,
     Object? downloadList = null,
     Object? error = null,
   }) {
     return _then(_$VideoDownloadProgressStateImpl(
+      informationList: null == informationList
+          ? _value._informationList
+          : informationList // ignore: cast_nullable_to_non_nullable
+              as List<VideoDownloadModel>,
       downloadList: null == downloadList
           ? _value._downloadList
           : downloadList // ignore: cast_nullable_to_non_nullable
-              as List<VideoDownloadModel>,
+              as List<DownloadManager>,
       error: null == error
           ? _value.error
           : error // ignore: cast_nullable_to_non_nullable
@@ -110,15 +127,26 @@ class __$$VideoDownloadProgressStateImplCopyWithImpl<$Res>
 
 class _$VideoDownloadProgressStateImpl implements _VideoDownloadProgressState {
   const _$VideoDownloadProgressStateImpl(
-      {final List<VideoDownloadModel> downloadList =
+      {final List<VideoDownloadModel> informationList =
           const <VideoDownloadModel>[],
+      final List<DownloadManager> downloadList = const <DownloadManager>[],
       this.error = const ErrorResponse()})
-      : _downloadList = downloadList;
+      : _informationList = informationList,
+        _downloadList = downloadList;
 
-  final List<VideoDownloadModel> _downloadList;
+  final List<VideoDownloadModel> _informationList;
   @override
   @JsonKey()
-  List<VideoDownloadModel> get downloadList {
+  List<VideoDownloadModel> get informationList {
+    if (_informationList is EqualUnmodifiableListView) return _informationList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_informationList);
+  }
+
+  final List<DownloadManager> _downloadList;
+  @override
+  @JsonKey()
+  List<DownloadManager> get downloadList {
     if (_downloadList is EqualUnmodifiableListView) return _downloadList;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_downloadList);
@@ -130,7 +158,7 @@ class _$VideoDownloadProgressStateImpl implements _VideoDownloadProgressState {
 
   @override
   String toString() {
-    return 'VideoDownloadProgressState(downloadList: $downloadList, error: $error)';
+    return 'VideoDownloadProgressState(informationList: $informationList, downloadList: $downloadList, error: $error)';
   }
 
   @override
@@ -139,13 +167,18 @@ class _$VideoDownloadProgressStateImpl implements _VideoDownloadProgressState {
         (other.runtimeType == runtimeType &&
             other is _$VideoDownloadProgressStateImpl &&
             const DeepCollectionEquality()
+                .equals(other._informationList, _informationList) &&
+            const DeepCollectionEquality()
                 .equals(other._downloadList, _downloadList) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @override
   int get hashCode => Object.hash(
-      runtimeType, const DeepCollectionEquality().hash(_downloadList), error);
+      runtimeType,
+      const DeepCollectionEquality().hash(_informationList),
+      const DeepCollectionEquality().hash(_downloadList),
+      error);
 
   @JsonKey(ignore: true)
   @override
@@ -158,11 +191,14 @@ class _$VideoDownloadProgressStateImpl implements _VideoDownloadProgressState {
 abstract class _VideoDownloadProgressState
     implements VideoDownloadProgressState {
   const factory _VideoDownloadProgressState(
-      {final List<VideoDownloadModel> downloadList,
+      {final List<VideoDownloadModel> informationList,
+      final List<DownloadManager> downloadList,
       final ErrorResponse error}) = _$VideoDownloadProgressStateImpl;
 
   @override
-  List<VideoDownloadModel> get downloadList;
+  List<VideoDownloadModel> get informationList;
+  @override
+  List<DownloadManager> get downloadList;
   @override
   ErrorResponse get error;
   @override

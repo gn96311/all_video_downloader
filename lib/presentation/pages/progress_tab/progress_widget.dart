@@ -92,7 +92,7 @@ class ProgressWidget extends ConsumerWidget {
                     height: 8,
                   ),
                   Text(
-                    '${downloadedVolume}MB/${entireVolume}MB (${calculatedPercent}%)',
+                    '${downloadedSize}MB downloaded (${downloadProgress}%)',
                     style: CustomThemeData.themeData.textTheme.labelSmall,
                   ),
                   SizedBox(
@@ -102,7 +102,7 @@ class ProgressWidget extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        progressState.toName,
+                        getDownloadStatusName(downloadStatus),
                         style: CustomThemeData.themeData.textTheme.labelSmall,
                       ),
                       Row(
@@ -116,7 +116,7 @@ class ProgressWidget extends ConsumerWidget {
                             width: 8,
                           ),
                           Icon(
-                            getProgressStateIcon(progressState),
+                            getDownloadStatus(downloadStatus),
                             size: 24,
                             color: AppColors.primary,
                           ),
@@ -133,18 +133,38 @@ class ProgressWidget extends ConsumerWidget {
     );
   }
 
-  IconData getProgressStateIcon(ProgressState progressState){
-    if (progressState == ProgressState.downloading) {
+  IconData getDownloadStatus(DownloadTaskStatus downloadStatus){
+    if (downloadStatus == DownloadTaskStatus.running) {
       return Icons.pause;
-    } else if (progressState == ProgressState.paused) {
+    } else if (downloadStatus == DownloadTaskStatus.paused) {
       return Icons.file_download_outlined;
-    } else if (progressState == ProgressState.waiting){
+    } else if (downloadStatus == DownloadTaskStatus.enqueued){
       return Icons.access_time_rounded;
-    } else {
+    } else if (downloadStatus == DownloadTaskStatus.merging) {
+      return Icons.merge_outlined;
+    } else if (downloadStatus == DownloadTaskStatus.undefined) {
+      return Icons.access_time_rounded;
+    }
+    else {
       return Icons.pause;
     }
   }
 
+  String getDownloadStatusName(DownloadTaskStatus downloadStatus){
+    if (downloadStatus == DownloadTaskStatus.running){
+      return '다운로드 중';
+    } else if (downloadStatus == DownloadTaskStatus.undefined) {
+      return '대기중';
+    } else if (downloadStatus == DownloadTaskStatus.enqueued) {
+      return '대기중';
+    } else if (downloadStatus == DownloadTaskStatus.paused) {
+      return '중지';
+    } else if (downloadStatus == DownloadTaskStatus.merging) {
+      return '영상 변환중';
+    } else{
+      return '';
+    }
+  }
 }
 
 

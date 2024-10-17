@@ -1,3 +1,5 @@
+import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
+import 'package:all_video_downloader/domain/model/download_manager/download_manager.dart';
 import 'package:all_video_downloader/domain/model/video_download/video_download_model.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.state.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -9,25 +11,29 @@ class VideoDownloadProgressNotifier
   VideoDownloadProgressNotifier()
       :super(VideoDownloadProgressState(downloadList: []));
 
-  void insertNewDownloadQueue(List<String> segmentUrls, String uuid, String title) {
+  void insertNewDownloadQueue(Map<String, String> segmentUrls, Map<String, dynamic> responseMap, String uuid, String title, Map<String, String> headers, WidgetRef ref) {
     VideoDownloadModel newVideoDownloadQueue = VideoDownloadModel(
       id: uuid,
-      segmentUrls: segmentUrls,
+      selectedUrls: segmentUrls,
+      responseMap: responseMap,
+      headers: headers,
       title: title.replaceAll(' ', '_'),
-      backgroundImageUrl: '',
+      backgroundImageUrl: AppIcons.noThumbnail,
       downloadedSized: 0.0,
       downloadSpeed: 0.0,
       downloadProgress: 0.0,
       downloadStatus: DownloadTaskStatus.undefined,
     );
+    DownloadManager downloadManager = DownloadManager(newVideoDownloadQueue, ref);
     state = state.copyWith(
-      downloadList: [...state.downloadList, newVideoDownloadQueue],
+      informationList: [...state.informationList, newVideoDownloadQueue],
+      downloadList: [...state.downloadList, downloadManager],
     );
   }
 
   void updateDownloadQueue(String id, String? backgroundImageUrl, double? downloadedSized, double? downloadSpeed, double? downloadProgress, DownloadTaskStatus? downloadStatus) {
-    List<VideoDownloadModel> updatedList = state.downloadList.map((item) {
-      if (item.id == id){
+    List<VideoDownloadModel> updatedInformationList = state.informationList.map((item) {
+      if (item.id == id) {
         return item.copyWith(
           backgroundImageUrl: backgroundImageUrl ?? item.backgroundImageUrl,
           downloadedSized: downloadedSized ?? item.downloadedSized,
@@ -38,7 +44,7 @@ class VideoDownloadProgressNotifier
       }
       return item;
     }).toList();
-    state = state.copyWith(downloadList: updatedList);
+    state = state.copyWith(informationList: updatedInformationList);
   }
 }
 

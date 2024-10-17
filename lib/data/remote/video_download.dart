@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:all_video_downloader/core/utils/rest_client/rest_client.dart';
 import 'package:all_video_downloader/data/remote/flutter_donwloader.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
@@ -258,15 +259,14 @@ Future<void> downloadAndMergeSegments(List<String> segmentUrls, String outputFil
     urlToSegmentPathMap[url] = segmentNameWithNewExtension;
   }
 
-  final segmentDownloader = SegmentDownloader(urlToSegmentPathMap: urlToSegmentPathMap, headers: headers, saveDir: segmentsDir.path, outputFileName: outputFileName);
-  await segmentDownloader.startDownload(ref);
+  // final segmentDownloader = SegmentDownloader(urlToSegmentPathMap: urlToSegmentPathMap, headers: headers, saveDir: segmentsDir.path, outputFileName: outputFileName);
+  // await segmentDownloader.startDownload(ref);
 
   await mergeSegments(segmentPaths, outputFileName);
 }
 
 
 Future<void> mergeSegments(List<String> segmentPaths, String outputFileName) async {
-  print('merge part');
   final directory = await getApplicationDocumentsDirectory();
   final segmentsDir = Directory('${directory.path}/outputPath');
   if (!segmentsDir.existsSync()) {
@@ -348,4 +348,77 @@ Future<void> cleanupSegmentsAndListFile(List<String> segmentPaths, Directory seg
   } catch (e) {
     print('Failed to delete segments: $e');
   }
+}
+
+//----------------------------------- case3 -------------------------------------------------------
+
+Future<List<String>> downloadSegmentsFunction(String id, List<String> segmentUrls, String outputFileName, Map<String, String> headers, WidgetRef ref) async {
+  ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.running);
+  final directory = await getApplicationDocumentsDirectory();
+  final segmentsDir = Directory('${directory.path}/downloadedSegments');
+  if (!segmentsDir.existsSync()) {
+    segmentsDir.createSync(recursive: true);
+  }
+
+  List<String> segmentPaths = [];
+  Map<String, String> urlToSegmentPathMap = {};
+
+  for (int urlNumber = 0; urlNumber < segmentUrls.length; urlNumber++) {
+    String url = segmentUrls[urlNumber];
+    final segmentName = url.split('/').last;
+    final segmentNameWithNewExtension = '${segmentName.split('.').first}.ts';
+    final segmentPath = '${segmentsDir.path}/$segmentNameWithNewExtension';
+    segmentPaths.add(segmentPath);
+    urlToSegmentPathMap[url] = segmentNameWithNewExtension;
+  }
+
+  final segmentDownloader = SegmentDownloader(downloadCompleterUUID: id, urlToSegmentPathMap: urlToSegmentPathMap, headers: headers, saveDir: segmentsDir.path, outputFileName: outputFileName, ref: ref);
+  await segmentDownloader.startDownload();
+
+  return segmentPaths;
+}
+
+Future<void> mergeSegmentsFuction(String id, List<String> segmentPaths, String outputFileName, WidgetRef ref) async {
+  ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.merging);
+  final directory = await getApplicationDocumentsDirectory();
+  final segmentsDir = Directory('${directory.path}/outputPath');
+  if (!segmentsDir.existsSync()) {
+    segmentsDir.createSync();
+  }
+  String sanitizedFileName = outputFileName.replaceAll(' ', '_');
+  String outputPath = '${segmentsDir.path}/$sanitizedFileName.mp4';
+
+  final segmentListFilePath = '${directory.path}/downloadedSegments/segment_list.txt';
+  final segmentListFile = File(segmentListFilePath);
+  final segmentListContent = segmentPaths.map((path) => "file '$path'").join('\n');
+  await segmentListFile.writeAsString(segmentListContent);
+
+  final command = "-f concat -safe 0 -i $segmentListFilePath -c copy $outputPath";
+
+
+  await FFmpegKit.execute(command).then((session) async {
+    final returnCode = await session.getReturnCode();
+    final failStackTrace = await session.getFailStackTrace();
+    final logs = await session.getLogs();
+
+    if (ReturnCode.isSuccess(returnCode)) {
+      print('Video conversion succeeded: $outputPath');
+      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.complete);
+      await cleanupSegmentsAndListFile(segmentPaths, segmentsDir);
+    } else if (ReturnCode.isCancel(returnCode)) {
+      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed);
+      print('Video conversion canceled');
+      // print(failStackTrace);
+      // logs.forEach((log) {
+      //   print(log.getMessage());
+      // });
+    } else {
+      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed);
+      print('Video conversion failed with return code: $returnCode');
+      // print(failStackTrace);
+      // logs.forEach((log) {
+      //   print(log.getMessage());
+      // });
+    }
+  });
 }

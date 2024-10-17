@@ -8,6 +8,7 @@ part 'video_download_progress.state.freezed.dart';
 @freezed
 class VideoDownloadProgressState with _$VideoDownloadProgressState {
   const factory VideoDownloadProgressState({
+    @Default(<VideoDownloadModel>[]) List<VideoDownloadModel> informationList,
     @Default(<DownloadManager>[]) List<DownloadManager> downloadList,
     @Default(ErrorResponse()) ErrorResponse error,
   }) = _VideoDownloadProgressState;
