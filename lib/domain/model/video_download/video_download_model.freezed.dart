@@ -26,6 +26,8 @@ mixin _$VideoDownloadModel {
   double get downloadSpeed => throw _privateConstructorUsedError;
   double get downloadProgress => throw _privateConstructorUsedError;
   DownloadTaskStatus get downloadStatus => throw _privateConstructorUsedError;
+  DateTime get modifiedTime => throw _privateConstructorUsedError;
+  Map<String, TaskInfo> get taskStatus => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $VideoDownloadModelCopyWith<VideoDownloadModel> get copyWith =>
@@ -48,7 +50,9 @@ abstract class $VideoDownloadModelCopyWith<$Res> {
       double downloadedSized,
       double downloadSpeed,
       double downloadProgress,
-      DownloadTaskStatus downloadStatus});
+      DownloadTaskStatus downloadStatus,
+      DateTime modifiedTime,
+      Map<String, TaskInfo> taskStatus});
 }
 
 /// @nodoc
@@ -74,6 +78,8 @@ class _$VideoDownloadModelCopyWithImpl<$Res, $Val extends VideoDownloadModel>
     Object? downloadSpeed = null,
     Object? downloadProgress = null,
     Object? downloadStatus = null,
+    Object? modifiedTime = null,
+    Object? taskStatus = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -116,6 +122,14 @@ class _$VideoDownloadModelCopyWithImpl<$Res, $Val extends VideoDownloadModel>
           ? _value.downloadStatus
           : downloadStatus // ignore: cast_nullable_to_non_nullable
               as DownloadTaskStatus,
+      modifiedTime: null == modifiedTime
+          ? _value.modifiedTime
+          : modifiedTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      taskStatus: null == taskStatus
+          ? _value.taskStatus
+          : taskStatus // ignore: cast_nullable_to_non_nullable
+              as Map<String, TaskInfo>,
     ) as $Val);
   }
 }
@@ -138,7 +152,9 @@ abstract class _$$VideoDownloadModelImplCopyWith<$Res>
       double downloadedSized,
       double downloadSpeed,
       double downloadProgress,
-      DownloadTaskStatus downloadStatus});
+      DownloadTaskStatus downloadStatus,
+      DateTime modifiedTime,
+      Map<String, TaskInfo> taskStatus});
 }
 
 /// @nodoc
@@ -162,6 +178,8 @@ class __$$VideoDownloadModelImplCopyWithImpl<$Res>
     Object? downloadSpeed = null,
     Object? downloadProgress = null,
     Object? downloadStatus = null,
+    Object? modifiedTime = null,
+    Object? taskStatus = null,
   }) {
     return _then(_$VideoDownloadModelImpl(
       id: null == id
@@ -204,6 +222,14 @@ class __$$VideoDownloadModelImplCopyWithImpl<$Res>
           ? _value.downloadStatus
           : downloadStatus // ignore: cast_nullable_to_non_nullable
               as DownloadTaskStatus,
+      modifiedTime: null == modifiedTime
+          ? _value.modifiedTime
+          : modifiedTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      taskStatus: null == taskStatus
+          ? _value._taskStatus
+          : taskStatus // ignore: cast_nullable_to_non_nullable
+              as Map<String, TaskInfo>,
     ));
   }
 }
@@ -221,10 +247,13 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
       required this.downloadedSized,
       required this.downloadSpeed,
       required this.downloadProgress,
-      required this.downloadStatus})
+      required this.downloadStatus,
+      required this.modifiedTime,
+      required final Map<String, TaskInfo> taskStatus})
       : _selectedUrls = selectedUrls,
         _responseMap = responseMap,
-        _headers = headers;
+        _headers = headers,
+        _taskStatus = taskStatus;
 
   @override
   final String id;
@@ -264,10 +293,19 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
   final double downloadProgress;
   @override
   final DownloadTaskStatus downloadStatus;
+  @override
+  final DateTime modifiedTime;
+  final Map<String, TaskInfo> _taskStatus;
+  @override
+  Map<String, TaskInfo> get taskStatus {
+    if (_taskStatus is EqualUnmodifiableMapView) return _taskStatus;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_taskStatus);
+  }
 
   @override
   String toString() {
-    return 'VideoDownloadModel(id: $id, title: $title, selectedUrls: $selectedUrls, responseMap: $responseMap, headers: $headers, backgroundImageUrl: $backgroundImageUrl, downloadedSized: $downloadedSized, downloadSpeed: $downloadSpeed, downloadProgress: $downloadProgress, downloadStatus: $downloadStatus)';
+    return 'VideoDownloadModel(id: $id, title: $title, selectedUrls: $selectedUrls, responseMap: $responseMap, headers: $headers, backgroundImageUrl: $backgroundImageUrl, downloadedSized: $downloadedSized, downloadSpeed: $downloadSpeed, downloadProgress: $downloadProgress, downloadStatus: $downloadStatus, modifiedTime: $modifiedTime, taskStatus: $taskStatus)';
   }
 
   @override
@@ -291,7 +329,11 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
             (identical(other.downloadProgress, downloadProgress) ||
                 other.downloadProgress == downloadProgress) &&
             (identical(other.downloadStatus, downloadStatus) ||
-                other.downloadStatus == downloadStatus));
+                other.downloadStatus == downloadStatus) &&
+            (identical(other.modifiedTime, modifiedTime) ||
+                other.modifiedTime == modifiedTime) &&
+            const DeepCollectionEquality()
+                .equals(other._taskStatus, _taskStatus));
   }
 
   @override
@@ -306,7 +348,9 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
       downloadedSized,
       downloadSpeed,
       downloadProgress,
-      downloadStatus);
+      downloadStatus,
+      modifiedTime,
+      const DeepCollectionEquality().hash(_taskStatus));
 
   @JsonKey(ignore: true)
   @override
@@ -327,7 +371,9 @@ abstract class _VideoDownloadModel implements VideoDownloadModel {
           required final double downloadedSized,
           required final double downloadSpeed,
           required final double downloadProgress,
-          required final DownloadTaskStatus downloadStatus}) =
+          required final DownloadTaskStatus downloadStatus,
+          required final DateTime modifiedTime,
+          required final Map<String, TaskInfo> taskStatus}) =
       _$VideoDownloadModelImpl;
 
   @override
@@ -350,6 +396,10 @@ abstract class _VideoDownloadModel implements VideoDownloadModel {
   double get downloadProgress;
   @override
   DownloadTaskStatus get downloadStatus;
+  @override
+  DateTime get modifiedTime;
+  @override
+  Map<String, TaskInfo> get taskStatus;
   @override
   @JsonKey(ignore: true)
   _$$VideoDownloadModelImplCopyWith<_$VideoDownloadModelImpl> get copyWith =>

@@ -5,13 +5,17 @@ import 'package:all_video_downloader/core/theme/theme_data.dart';
 import 'package:all_video_downloader/data/entity/internet_bookmark.entity.dart';
 import 'package:all_video_downloader/data/entity/internet_history.entity.dart';
 import 'package:all_video_downloader/data/entity/internet_tab.entity.dart';
-import 'package:all_video_downloader/data/remote/flutter_donwloader.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/task_info.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/download_monitor.dart';
 import 'package:all_video_downloader/presentation/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,9 +24,56 @@ void main() async {
   Hive.registerAdapter(InternetTabEntityAdapter());
   Hive.registerAdapter(InternetHistoryEntityAdapter());
   Hive.registerAdapter(InternetBookmarkEntityAdapter());
+
   final port = ReceivePort();
   IsolateNameServer.removePortNameMapping('downloader_send_port');
   IsolateNameServer.registerPortWithName(port.sendPort, 'downloader_send_port');
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.delayed(Duration.zero, () {
+      if (navigatorKey.currentContext != null) {
+        final container = ProviderScope.containerOf(
+            navigatorKey.currentContext!,
+            listen: false);
+
+        port.listen((dynamic data) {
+          String id = data[0];
+          int status = data[1];
+          int progress = data[2];
+
+          final taskInfo = TaskInfo(
+              status: DownloadTaskStatus.values[status], progress: progress);
+          // 상태 업데이트
+          // 여기서 나가는것은
+          // id, status, progress 인데, 이것은 각각의 taskId를 뜻하는 것임.
+
+          bool isSegmentDownloadComplete =
+              taskInfo.status == DownloadTaskStatus.complete;
+
+          if (isSegmentDownloadComplete) {
+            final downloadInformationList =
+                container.read(progressProvider).downloadInformationList;
+            for (var videoModel in downloadInformationList) {
+              if (videoModel.taskStatus.containsKey(id)) {
+                final updatedTaskStatus = {id: taskInfo};
+
+                container.read(progressProvider.notifier).updateDownloadQueue(
+                    videoModel.id,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    updatedTaskStatus);
+              }
+            }
+          }
+        });
+      } else {}
+    });
+  });
+
   await FlutterDownloader.initialize(debug: true);
   FlutterDownloader.registerCallback(downloadCallback);
   runApp(const ProviderScope(child: MainApp()));
@@ -31,22 +82,14 @@ void main() async {
 DateTime? lastSendTime;
 
 void downloadCallback(String id, int status, int progress) {
-  if (sendCallbackData()) {
-    final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
-    send?.send([id, status, progress]);
-  }
-}
-
-bool sendCallbackData() {
-  if (lastSendTime == null || DateTime.now().difference(lastSendTime!).inMilliseconds >= 500) {
-    lastSendTime = DateTime.now();
-    return true;
-  }
-  return false;
+  final SendPort? send =
+      IsolateNameServer.lookupPortByName('downloader_send_port');
+  send?.send([id, status, progress]);
 }
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(

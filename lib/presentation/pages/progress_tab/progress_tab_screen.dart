@@ -1,18 +1,48 @@
 import 'package:all_video_downloader/core/theme/constant/app_colors.dart';
 import 'package:all_video_downloader/core/theme/theme_data.dart';
+import 'package:all_video_downloader/data/remote/video_segment_downloader.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/progress_state_provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/progress_widget.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.state.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProgressTabScreen extends ConsumerWidget {
+class ProgressTabScreen extends ConsumerStatefulWidget {
   const ProgressTabScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final downloadInformationList =
-        ref.watch(VideoDownloadProgressProvider).informationList;
+  ConsumerState<ProgressTabScreen> createState() => _ProgressTabScreenState();
+}
+
+class _ProgressTabScreenState extends ConsumerState<ProgressTabScreen> {
+
+  @override
+  void initState() {
+    ref.listen<ProgressProviderState>(progressProvider, (previous, current) {
+      // progressDownloading이 바뀌었는데, current.progressDownloading이 false면 다운로드 가능 확인. 가능하면 시작.
+      if (previous!.progressDownloading != current.progressDownloading){
+        if (current.progressDownloading == false){
+          startNextDownloadIfPossible();
+        }
+      }
+
+      // informationList 요소 삭제, 완료 등으로 인해 길이가 바뀌면, 반응. list가 안비어있고, progressDownloading이 false면 다운로드 가능 확인. 가능하면 시작.
+      if (previous.downloadInformationList.length != current.downloadInformationList.length){
+        if (current.downloadInformationList.isNotEmpty && !current.progressDownloading){
+          startNextDownloadIfPossible();
+        }
+      }
+    });
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final downloadList = ref.watch(progressProvider).downloadInformationList;
+    // TODO: 이걸 이제 progressProvider로 바꾸어야 함.
+    // TODO: 각 위젯에 VideoDownloadModel을 넘기고,
     return SafeArea(
       child: Scaffold(
         appBar: PreferredSize(
@@ -33,7 +63,7 @@ class ProgressTabScreen extends ConsumerWidget {
                     height: 30,
                     width: 30,
                     alignment: Alignment.center,
-                    child: Text('25'),
+                    child: Text(downloadList.length.toString()),
                     decoration: BoxDecoration(
                       color: AppColors.white,
                       boxShadow: [
@@ -152,7 +182,7 @@ class ProgressTabScreen extends ConsumerWidget {
               Expanded(
                   child: ListView.builder(
                 itemBuilder: (context, index) {
-                  final item = downloadInformationList[index];
+                  final item = downloadList[index];
                   return ProgressWidget(
                       uuid: item.id,
                       title: item.title,
@@ -160,20 +190,26 @@ class ProgressTabScreen extends ConsumerWidget {
                       downloadedSize: item.downloadedSized,
                       downloadSpeed: item.downloadSpeed,
                       downloadProgress: item.downloadProgress,
-                      downloadStatus: item.downloadStatus);
+                      downloadStatus: item.downloadStatus,
+                  );
                 },
-                itemCount: downloadInformationList.length,
+                itemCount: downloadList.length,
               ))
             ],
           ),
-          // child: ProgressWidget(
-          //   title: 'Title of Video if has long name, describe like this.',
-          //   downloadedVolume: 75.05,
-          //   entireVolume: 120.02,
-          //   progressState: ProgressState.downloading,
-          // ),
         ),
       ),
     );
+  }
+
+  Future<void> startNextDownloadIfPossible() async {
+    //여기서는 들어가는 다운로드 info를 얻을 수 있음.
+    final state = ref.read(progressProvider);
+    if (!state.progressDownloading && state.downloadInformationList.isNotEmpty) {
+      final nextDownloadInformation = state.downloadInformationList.first;
+      try {
+        await startSegmentDownload(nextDownloadInformation, ref);
+      } catch (e) {}
+    }
   }
 }

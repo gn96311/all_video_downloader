@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:all_video_downloader/core/utils/rest_client/rest_client.dart';
 import 'package:all_video_downloader/data/remote/flutter_donwloader.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
@@ -339,12 +340,6 @@ Future<void> cleanupSegmentsAndListFile(List<String> segmentPaths, Directory seg
       await segmentListFile.delete();
       print('Deleted ${segmentListFile.path}');
     }
-
-    // 다운로드된 세그먼트 디렉토리 삭제
-    // if (await segmentsDir.exists()) {
-    //   await segmentsDir.delete(recursive: true);
-    //   print('Deleted directory: ${segmentsDir.path}');
-    // }
   } catch (e) {
     print('Failed to delete segments: $e');
   }
@@ -352,34 +347,9 @@ Future<void> cleanupSegmentsAndListFile(List<String> segmentPaths, Directory seg
 
 //----------------------------------- case3 -------------------------------------------------------
 
-Future<List<String>> downloadSegmentsFunction(String id, List<String> segmentUrls, String outputFileName, Map<String, String> headers, WidgetRef ref) async {
-  ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.running);
-  final directory = await getApplicationDocumentsDirectory();
-  final segmentsDir = Directory('${directory.path}/downloadedSegments');
-  if (!segmentsDir.existsSync()) {
-    segmentsDir.createSync(recursive: true);
-  }
-
-  List<String> segmentPaths = [];
-  Map<String, String> urlToSegmentPathMap = {};
-
-  for (int urlNumber = 0; urlNumber < segmentUrls.length; urlNumber++) {
-    String url = segmentUrls[urlNumber];
-    final segmentName = url.split('/').last;
-    final segmentNameWithNewExtension = '${segmentName.split('.').first}.ts';
-    final segmentPath = '${segmentsDir.path}/$segmentNameWithNewExtension';
-    segmentPaths.add(segmentPath);
-    urlToSegmentPathMap[url] = segmentNameWithNewExtension;
-  }
-
-  final segmentDownloader = SegmentDownloader(downloadCompleterUUID: id, urlToSegmentPathMap: urlToSegmentPathMap, headers: headers, saveDir: segmentsDir.path, outputFileName: outputFileName, ref: ref);
-  await segmentDownloader.startDownload();
-
-  return segmentPaths;
-}
-
 Future<void> mergeSegmentsFuction(String id, List<String> segmentPaths, String outputFileName, WidgetRef ref) async {
-  ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.merging);
+  //TODO: 나중에 저장위치 Download 폴더로 바꿔야함
+  ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.merging, null, null);
   final directory = await getApplicationDocumentsDirectory();
   final segmentsDir = Directory('${directory.path}/outputPath');
   if (!segmentsDir.existsSync()) {
@@ -393,7 +363,7 @@ Future<void> mergeSegmentsFuction(String id, List<String> segmentPaths, String o
   final segmentListContent = segmentPaths.map((path) => "file '$path'").join('\n');
   await segmentListFile.writeAsString(segmentListContent);
 
-  final command = "-f concat -safe 0 -i $segmentListFilePath -c copy $outputPath";
+  final command = "-y -f concat -safe 0 -i $segmentListFilePath -c copy $outputPath";
 
 
   await FFmpegKit.execute(command).then((session) async {
@@ -403,17 +373,18 @@ Future<void> mergeSegmentsFuction(String id, List<String> segmentPaths, String o
 
     if (ReturnCode.isSuccess(returnCode)) {
       print('Video conversion succeeded: $outputPath');
-      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.complete);
+      ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.complete, null, null);
       await cleanupSegmentsAndListFile(segmentPaths, segmentsDir);
+      ref.read(VideoDownloadProgressProvider.notifier).deleteDownloadQueue(id);
     } else if (ReturnCode.isCancel(returnCode)) {
-      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed);
+      ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed, null, null);
       print('Video conversion canceled');
       // print(failStackTrace);
       // logs.forEach((log) {
       //   print(log.getMessage());
       // });
     } else {
-      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed);
+      ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed, null, null);
       print('Video conversion failed with return code: $returnCode');
       // print(failStackTrace);
       // logs.forEach((log) {

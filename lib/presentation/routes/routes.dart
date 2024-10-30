@@ -1,3 +1,4 @@
+import 'package:all_video_downloader/main.dart';
 import 'package:all_video_downloader/presentation/main/main_screen.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/setting_screen.dart';
 import 'package:all_video_downloader/presentation/pages/splash/splash_screen.dart';
@@ -5,6 +6,7 @@ import 'package:all_video_downloader/presentation/routes/route_path.dart';
 import 'package:go_router/go_router.dart';
 
 final GoRouter router = GoRouter(
+  navigatorKey: navigatorKey,
   routes: [
     GoRoute(
         path: RoutePath.main,

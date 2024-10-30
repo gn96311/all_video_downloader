@@ -4,11 +4,12 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
+import 'package:all_video_downloader/data/remote/video_download.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/download_monitor.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 class SegmentDownloader {
   Map<String, String> urlToSegmentPathMap;
@@ -19,19 +20,21 @@ class SegmentDownloader {
   List<String> segmentDownloadIds = [];
   double totalDownloadedSize = 0.0;
   double downloadSpeed = 0.0;
-  DateTime previousTime = DateTime.now();
   double previousDownloadedBytes = 0.0;
   String outputFileName;
   String? firstSegmentTaskId;
   String downloadCompleterUUID;
+  List<String> segmentPaths;
   WidgetRef ref;
 
   final Map<String, DownloadTaskStatus> _taskStatusMap = {};
   final Map<String, Completer<void>> _taskCompleters = {};
+  late final ProviderSubscription _downloadMonitorSubscription;
 
   SegmentDownloader({
     required this.downloadCompleterUUID,
     required this.urlToSegmentPathMap,
+    required this.segmentPaths,
     required this.headers,
     required this.saveDir,
     required this.outputFileName,
@@ -39,136 +42,174 @@ class SegmentDownloader {
   });
 
   Future<void> startDownload() async {
+    print('start download Video');
     final completer = Completer<void>();
     _taskCompleters[downloadCompleterUUID] = completer;
     Map<String, int> segmentProgressMap = {};
+    Map<String, String> taskIdToUrlMap = {};
     int totalSegmentsLength = urlToSegmentPathMap.entries.length;
+    final previousTime = DateTime.now();
+
 
     for (var entry in urlToSegmentPathMap.entries) {
       final taskId = await FlutterDownloader.enqueue(
         url: entry.key,
         savedDir: saveDir,
         fileName: entry.value,
-        showNotification: true,
+        showNotification: false,
         openFileFromNotification: false,
         headers: headers,
       );
       _taskStatusMap[taskId!] = DownloadTaskStatus.undefined;
       segmentDownloadIds.add(taskId!);
+      taskIdToUrlMap[taskId] = entry.key;
       firstSegmentTaskId ??= taskId;
     }
 
-    final port = IsolateNameServer.lookupPortByName('downloader_send_port') as ReceivePort;
-    port.listen((dynamic data) async {
-      String id = data[0];
-      int status = data[1];
-      int progress = data[2];
-      final taskStatus = DownloadTaskStatus.values[status];
+    _downloadMonitorSubscription =
+        ref.listenManual<Map<String, DownloadMonitorState>>(
+            downloadMonitorProvider, (previous, next) async {
+          bool allComplete = true;
+          bool anyFailed = false;
 
-      segmentProgressMap[id] = progress;
-      _taskStatusMap[id] = taskStatus;
+          for (String taskId in segmentDownloadIds) {
+            final downloadState = next[taskId];
+            if (downloadState != null) {
+              DownloadTaskStatus status = downloadState.status;
+              int progress = downloadState.progress;
 
-      if (id == firstSegmentTaskId && taskStatus == DownloadTaskStatus.complete) {
-        final firstSegmentPath = '$saveDir/${urlToSegmentPathMap.entries.firstWhere((e) => e.key == firstSegmentTaskId).value}';
-        String thumbnail = await generateThumbnail(firstSegmentPath);
-        ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, thumbnail, null, null, null, null);
-      }
+              _taskStatusMap[taskId] = status;
+              segmentProgressMap[taskId] = progress;
+              final url = taskIdToUrlMap[taskId];
 
-      final filePath = '$saveDir/${urlToSegmentPathMap.entries.firstWhere((e) => e.key == id).value}';
-      final file = File(filePath);
-      if (file.existsSync()) {
-        // 다운로드 된 사이즈
-        totalDownloadedSize += await file.length();
-      }
+              if (status != DownloadTaskStatus.complete) {
+                allComplete = false;
+              }
+              if (status == DownloadTaskStatus.failed) {
+                anyFailed = true;
+              }
+            }
+          }
 
-      //다운로드 속도
-      downloadSpeed = calculateDownloadSpeed(totalDownloadedSize) ?? 0;
+          totalDownloadedSize = await getTotalDownloadedSize(saveDir);
 
-      double totalProgress = segmentProgressMap.values.fold(0, (sum, p) => sum + p);
-      // 전체 진행도
-      double overallProgress = totalProgress / totalSegmentsLength;
+          // 다운로드 속도 계산
+          downloadSpeed = calculateDownloadSpeed(totalDownloadedSize, previousTime);
 
-      ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, downloadSpeed, overallProgress, DownloadTaskStatus.running);
+          // 전체 진행도 계산
+          double totalProgress = segmentProgressMap.values.fold(
+              0, (sum, p) => sum + p);
+          double overallProgress = totalProgress / totalSegmentsLength;
 
-      if (_taskStatusMap.values.every((status) => status == DownloadTaskStatus.complete)) {
-        ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, 0, 100, DownloadTaskStatus.complete);
-        _taskCompleters[id]?.complete();
-        _taskCompleters.remove(id);
-      } else if (_taskStatusMap.values.any((status) => status == DownloadTaskStatus.failed)) {
-        ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, 0, overallProgress, DownloadTaskStatus.failed);
-        _taskCompleters[id]?.complete();
-        _taskCompleters.remove(id);
-      } else if (_taskStatusMap.values.any((status) => status == DownloadTaskStatus.canceled)) {
-        ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, totalDownloadedSize, 0, overallProgress, DownloadTaskStatus.canceled);
-        _taskCompleters[id]?.complete();
-        _taskCompleters.remove(id);
-      }
-    });
+          // 상태 업데이트
+          ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(
+            downloadCompleterUUID,
+            null,
+            totalDownloadedSize,
+            downloadSpeed,
+            overallProgress,
+            DownloadTaskStatus.running,
+          );
+
+          // 첫 번째 세그먼트 완료 시 썸네일 생성
+          if (!_thumbnailGenerated && _taskStatusMap[firstSegmentTaskId] ==
+              DownloadTaskStatus.complete) {
+            final firstSegmentPath = '$saveDir/${urlToSegmentPathMap[firstSegmentTaskId]}';
+            String thumbnail = await generateThumbnail(firstSegmentPath);
+            ref.read(VideoDownloadProgressProvider.notifier)
+                .updateDownloadQueue(
+                downloadCompleterUUID, thumbnail, null, null, null, null);
+            _thumbnailGenerated = true;
+          }
+
+          if (allComplete) {
+            // 모든 세그먼트 다운로드 완료 시 병합 시작
+            await mergeSegmentsFuction(
+                downloadCompleterUUID, segmentPaths, outputFileName, ref);
+            // 구독 해제
+            _downloadMonitorSubscription.close();
+            completer.complete();
+          } else if (anyFailed) {
+            // 실패 처리
+            ref.read(VideoDownloadProgressProvider.notifier)
+                .updateDownloadQueue(
+              downloadCompleterUUID, null, totalDownloadedSize, 0,
+              overallProgress, DownloadTaskStatus.failed,);
+            // 구독 해제
+            _downloadMonitorSubscription.close();
+            completer.completeError('Download failed');
+          }
+        });
     await completer.future;
   }
 
+  bool _thumbnailGenerated = false;
+
+  Future<double> getTotalDownloadedSize(String saveDir) async {
+    final directory = Directory(saveDir);
+    double totalSizeInMB = 0.0;
+    if (directory.existsSync()) {
+      final files = directory.listSync();
+      for (var file in files) {
+        if (file is File) {
+          int fileSizeInBytes = await file.length();
+          double fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+          totalSizeInMB += fileSizeInMB;
+        }
+      }
+    }
+    return totalSizeInMB;
+  }
+
   Future<String> generateThumbnail(String segmentPath) async {
-    String command = '-i $segmentPath -ss 00:00:01 -vframes 1 $saveDir/thumbnail.jpg';
+    String command = '-y -i $segmentPath -ss 00:00:01 -vframes 1 $saveDir/thumbnail.jpg';
     try {
       await FFmpegKit.execute(command);
-      return '$saveDir/thumbnail.jpg';
+      final thumbnailFile = File('$saveDir/thumbnail.jpg');
+      if (await thumbnailFile.exists()) {
+        return thumbnailFile.path;
+      } else {
+        print('Here Thumbnail file does not exist after generation.');
+        String noThumbnailImage = AppIcons.noThumbnail;
+        return noThumbnailImage;
+      }
     } catch (e) {
+      print('Here Error generating thumbnail: $e');
       String noThumbnailImage = AppIcons.noThumbnail;
       return noThumbnailImage;
     }
   }
 
-  double? calculateDownloadSpeed(double currentDownloadedBytes) {
-    final currentTime = DateTime.now();
-    final timeDiff = currentTime.difference(previousTime).inSeconds;
-    final bytesDownloaded = currentDownloadedBytes - previousDownloadedBytes;
-
+  double calculateDownloadSpeed(double downloadedSize, DateTime previousTime) {
+    DateTime currentTime = DateTime.now();
+    final timeDiff = currentTime.difference(previousTime).inMilliseconds;
     if (timeDiff > 0) {
-      final downloadSpeedBytes = bytesDownloaded / timeDiff;
-      return downloadSpeedBytes;
+      final downloadPerSecond = downloadedSize / (timeDiff / 1000);
+      return downloadPerSecond;
     }
-    previousDownloadedBytes = currentDownloadedBytes;
-    previousTime = currentTime;
+    return 0.0;
   }
 
-  // static void updateDownloadStatus(String id, DownloadTaskStatus status) {
-  //   _taskStatusMap[id] = status;
-  //   if (status == DownloadTaskStatus.complete || status == DownloadTaskStatus.failed || status == DownloadTaskStatus.canceled) {
-  //     // 해당 작업의 Completer 완료 처리
-  //     _taskCompleters[id]?.complete();
-  //     // Completer 맵에서 제거
-  //     _taskCompleters.remove(id);
-  //   }
-  // }
-
   Future<void> pauseDownload() async {
+    ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, null, null, null, DownloadTaskStatus.paused);
     for (String taskId in segmentDownloadIds) {
       await FlutterDownloader.pause(taskId: taskId);
     }
   }
 
   Future<void> resumeDownload() async {
+    ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, null, null, null, DownloadTaskStatus.running);
     for (String taskId in segmentDownloadIds) {
     await FlutterDownloader.resume(taskId: taskId);
     }
   }
 
   Future<void> cancelDownload() async {
+    ref.read(VideoDownloadProgressProvider.notifier).updateDownloadQueue(downloadCompleterUUID, null, null, null, null, DownloadTaskStatus.canceled);
     for (String taskId in segmentDownloadIds) {
       await FlutterDownloader.cancel(taskId: taskId);
     }
     segmentDownloadIds.clear();
-  }
-
-  void checkProgress() {
-    FlutterDownloader.registerCallback((id, status, progress) {
-      final now = DateTime.now();
-      final timeDiff = now.difference(lastUpdate).inMilliseconds;
-      if (progress != lastProgress && (progress - lastProgress).abs() >= 5 && timeDiff > 1000) {
-        lastProgress = progress;
-        lastUpdate = now;
-        print('Download progress: $progress%');
-      }
-    });
+    ref.read(VideoDownloadProgressProvider.notifier).deleteDownloadQueue(downloadCompleterUUID);
   }
 }

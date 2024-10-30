@@ -1,3 +1,4 @@
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/task_info.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -16,5 +17,7 @@ class VideoDownloadModel with _$VideoDownloadModel {
     required double downloadSpeed,
     required double downloadProgress,
     required DownloadTaskStatus downloadStatus,
+    required DateTime modifiedTime,
+    required Map<String, TaskInfo> taskStatus,
   }) = _VideoDownloadModel;
 }

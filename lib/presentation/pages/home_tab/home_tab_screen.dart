@@ -22,6 +22,7 @@ import 'package:all_video_downloader/presentation/pages/home_tab/provider/intern
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_history/internet_history.state.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_tab.provider.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/webview_screen.dart';
+import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -823,7 +824,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     if (selectedUrls.isEmpty){
       return;
     }
-    final selectedData = responseMap[selectedUrls['videoUrl']];
-    await processM3U8(selectedData, title, headers, ref);
+    ref.read(progressProvider.notifier).insertNewDownloadQueue(selectedUrls, responseMap, title, headers);
   }
 }
