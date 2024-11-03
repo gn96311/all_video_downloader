@@ -36,7 +36,7 @@ void main() async {
             navigatorKey.currentContext!,
             listen: false);
 
-        port.listen((dynamic data) {
+        port.listen((dynamic data) async {
           String id = data[0];
           int status = data[1];
           int progress = data[2];
@@ -44,20 +44,21 @@ void main() async {
           final taskInfo = TaskInfo(
               status: DownloadTaskStatus.values[status], progress: progress);
           // 상태 업데이트
-          // 여기서 나가는것은
-          // id, status, progress 인데, 이것은 각각의 taskId를 뜻하는 것임.
+          // 여기서 나가는것은 id, status, progress 인데, 이것은 각각의 taskId를 뜻하는 것임.
 
           bool isSegmentDownloadComplete =
-              taskInfo.status == DownloadTaskStatus.complete;
+              taskInfo.status == DownloadTaskStatus.complete ||
+              taskInfo.status == DownloadTaskStatus.enqueued;
 
           if (isSegmentDownloadComplete) {
             final downloadInformationList =
                 container.read(progressProvider).downloadInformationList;
+            bool found = false;
             for (var videoModel in downloadInformationList) {
               if (videoModel.taskStatus.containsKey(id)) {
                 final updatedTaskStatus = {id: taskInfo};
 
-                container.read(progressProvider.notifier).updateDownloadQueue(
+                await container.read(progressProvider.notifier).updateDownloadQueue(
                     videoModel.id,
                     null,
                     null,
@@ -65,8 +66,14 @@ void main() async {
                     null,
                     null,
                     null,
-                    updatedTaskStatus);
+                    updatedTaskStatus,
+                    null,
+                    null,
+                    null);
               }
+            }
+            if (!found){
+              retryUntilUpdated(id, taskInfo, container);
             }
           }
         });
@@ -85,6 +92,43 @@ void downloadCallback(String id, int status, int progress) {
   final SendPort? send =
       IsolateNameServer.lookupPortByName('downloader_send_port');
   send?.send([id, status, progress]);
+}
+
+Future<void> retryUntilUpdated(String id, TaskInfo taskInfo, ProviderContainer container) async {
+  const retryInterval = Duration(milliseconds: 1000);
+  const maxRetries = 5;
+
+  int retries = 0;
+  bool isUpdated = false;
+
+  while (!isUpdated && retries <maxRetries) {
+    final downloadInformationList = container.read(progressProvider).downloadInformationList;
+
+    for (var videoModel in downloadInformationList) {
+      if (videoModel.taskStatus.containsKey(id)) {
+        final updatedTaskStatus = {id: taskInfo};
+        await container.read(progressProvider.notifier).updateDownloadQueue(
+          videoModel.id,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          updatedTaskStatus,
+          null,
+          null,
+          null,
+        );
+        isUpdated = true;
+        break;
+      }
+    }
+    if (!isUpdated) {
+      await Future.delayed(retryInterval);
+      retries++;
+    }
+  }
 }
 
 class MainApp extends StatelessWidget {

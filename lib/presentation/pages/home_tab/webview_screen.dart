@@ -166,10 +166,7 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                       }
 
                       if (mounted) {
-                        ref
-                            .read(HlsVideoInfoProvider.notifier)
-                            .state =
-                            HlsVideoInfo(
+                        ref.read(HlsVideoInfoProvider.notifier).state = HlsVideoInfo(
                                 hlsUrls: m3u8UrlList,
                                 title: entireTitle,);
                       }

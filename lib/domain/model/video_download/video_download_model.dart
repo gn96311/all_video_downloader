@@ -19,5 +19,26 @@ class VideoDownloadModel with _$VideoDownloadModel {
     required DownloadTaskStatus downloadStatus,
     required DateTime modifiedTime,
     required Map<String, TaskInfo> taskStatus,
+    required String saveDir,
+    required List<String> segmentPaths,
+    required bool isMerged,
   }) = _VideoDownloadModel;
+
+  factory VideoDownloadModel.empty() {
+    return VideoDownloadModel(id: '',
+        title: '',
+        selectedUrls: {},
+        responseMap: {},
+        headers: {},
+        backgroundImageUrl: '',
+        downloadedSized: 0.0,
+        downloadSpeed: 0,
+        downloadProgress: 0,
+        downloadStatus: DownloadTaskStatus.enqueued,
+        modifiedTime: DateTime.now(),
+        taskStatus: {},
+        saveDir: '',
+        segmentPaths: [],
+        isMerged: true,);
+  }
 }

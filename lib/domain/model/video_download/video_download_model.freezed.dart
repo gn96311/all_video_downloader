@@ -28,6 +28,9 @@ mixin _$VideoDownloadModel {
   DownloadTaskStatus get downloadStatus => throw _privateConstructorUsedError;
   DateTime get modifiedTime => throw _privateConstructorUsedError;
   Map<String, TaskInfo> get taskStatus => throw _privateConstructorUsedError;
+  String get saveDir => throw _privateConstructorUsedError;
+  List<String> get segmentPaths => throw _privateConstructorUsedError;
+  bool get isMerged => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $VideoDownloadModelCopyWith<VideoDownloadModel> get copyWith =>
@@ -52,7 +55,10 @@ abstract class $VideoDownloadModelCopyWith<$Res> {
       double downloadProgress,
       DownloadTaskStatus downloadStatus,
       DateTime modifiedTime,
-      Map<String, TaskInfo> taskStatus});
+      Map<String, TaskInfo> taskStatus,
+      String saveDir,
+      List<String> segmentPaths,
+      bool isMerged});
 }
 
 /// @nodoc
@@ -80,6 +86,9 @@ class _$VideoDownloadModelCopyWithImpl<$Res, $Val extends VideoDownloadModel>
     Object? downloadStatus = null,
     Object? modifiedTime = null,
     Object? taskStatus = null,
+    Object? saveDir = null,
+    Object? segmentPaths = null,
+    Object? isMerged = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -130,6 +139,18 @@ class _$VideoDownloadModelCopyWithImpl<$Res, $Val extends VideoDownloadModel>
           ? _value.taskStatus
           : taskStatus // ignore: cast_nullable_to_non_nullable
               as Map<String, TaskInfo>,
+      saveDir: null == saveDir
+          ? _value.saveDir
+          : saveDir // ignore: cast_nullable_to_non_nullable
+              as String,
+      segmentPaths: null == segmentPaths
+          ? _value.segmentPaths
+          : segmentPaths // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      isMerged: null == isMerged
+          ? _value.isMerged
+          : isMerged // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -154,7 +175,10 @@ abstract class _$$VideoDownloadModelImplCopyWith<$Res>
       double downloadProgress,
       DownloadTaskStatus downloadStatus,
       DateTime modifiedTime,
-      Map<String, TaskInfo> taskStatus});
+      Map<String, TaskInfo> taskStatus,
+      String saveDir,
+      List<String> segmentPaths,
+      bool isMerged});
 }
 
 /// @nodoc
@@ -180,6 +204,9 @@ class __$$VideoDownloadModelImplCopyWithImpl<$Res>
     Object? downloadStatus = null,
     Object? modifiedTime = null,
     Object? taskStatus = null,
+    Object? saveDir = null,
+    Object? segmentPaths = null,
+    Object? isMerged = null,
   }) {
     return _then(_$VideoDownloadModelImpl(
       id: null == id
@@ -230,6 +257,18 @@ class __$$VideoDownloadModelImplCopyWithImpl<$Res>
           ? _value._taskStatus
           : taskStatus // ignore: cast_nullable_to_non_nullable
               as Map<String, TaskInfo>,
+      saveDir: null == saveDir
+          ? _value.saveDir
+          : saveDir // ignore: cast_nullable_to_non_nullable
+              as String,
+      segmentPaths: null == segmentPaths
+          ? _value._segmentPaths
+          : segmentPaths // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      isMerged: null == isMerged
+          ? _value.isMerged
+          : isMerged // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -249,11 +288,15 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
       required this.downloadProgress,
       required this.downloadStatus,
       required this.modifiedTime,
-      required final Map<String, TaskInfo> taskStatus})
+      required final Map<String, TaskInfo> taskStatus,
+      required this.saveDir,
+      required final List<String> segmentPaths,
+      required this.isMerged})
       : _selectedUrls = selectedUrls,
         _responseMap = responseMap,
         _headers = headers,
-        _taskStatus = taskStatus;
+        _taskStatus = taskStatus,
+        _segmentPaths = segmentPaths;
 
   @override
   final String id;
@@ -304,8 +347,21 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
   }
 
   @override
+  final String saveDir;
+  final List<String> _segmentPaths;
+  @override
+  List<String> get segmentPaths {
+    if (_segmentPaths is EqualUnmodifiableListView) return _segmentPaths;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_segmentPaths);
+  }
+
+  @override
+  final bool isMerged;
+
+  @override
   String toString() {
-    return 'VideoDownloadModel(id: $id, title: $title, selectedUrls: $selectedUrls, responseMap: $responseMap, headers: $headers, backgroundImageUrl: $backgroundImageUrl, downloadedSized: $downloadedSized, downloadSpeed: $downloadSpeed, downloadProgress: $downloadProgress, downloadStatus: $downloadStatus, modifiedTime: $modifiedTime, taskStatus: $taskStatus)';
+    return 'VideoDownloadModel(id: $id, title: $title, selectedUrls: $selectedUrls, responseMap: $responseMap, headers: $headers, backgroundImageUrl: $backgroundImageUrl, downloadedSized: $downloadedSized, downloadSpeed: $downloadSpeed, downloadProgress: $downloadProgress, downloadStatus: $downloadStatus, modifiedTime: $modifiedTime, taskStatus: $taskStatus, saveDir: $saveDir, segmentPaths: $segmentPaths, isMerged: $isMerged)';
   }
 
   @override
@@ -333,7 +389,12 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
             (identical(other.modifiedTime, modifiedTime) ||
                 other.modifiedTime == modifiedTime) &&
             const DeepCollectionEquality()
-                .equals(other._taskStatus, _taskStatus));
+                .equals(other._taskStatus, _taskStatus) &&
+            (identical(other.saveDir, saveDir) || other.saveDir == saveDir) &&
+            const DeepCollectionEquality()
+                .equals(other._segmentPaths, _segmentPaths) &&
+            (identical(other.isMerged, isMerged) ||
+                other.isMerged == isMerged));
   }
 
   @override
@@ -350,7 +411,10 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
       downloadProgress,
       downloadStatus,
       modifiedTime,
-      const DeepCollectionEquality().hash(_taskStatus));
+      const DeepCollectionEquality().hash(_taskStatus),
+      saveDir,
+      const DeepCollectionEquality().hash(_segmentPaths),
+      isMerged);
 
   @JsonKey(ignore: true)
   @override
@@ -362,19 +426,21 @@ class _$VideoDownloadModelImpl implements _VideoDownloadModel {
 
 abstract class _VideoDownloadModel implements VideoDownloadModel {
   const factory _VideoDownloadModel(
-          {required final String id,
-          required final String title,
-          required final Map<String, String?> selectedUrls,
-          required final Map<String, dynamic> responseMap,
-          required final Map<String, String> headers,
-          required final String backgroundImageUrl,
-          required final double downloadedSized,
-          required final double downloadSpeed,
-          required final double downloadProgress,
-          required final DownloadTaskStatus downloadStatus,
-          required final DateTime modifiedTime,
-          required final Map<String, TaskInfo> taskStatus}) =
-      _$VideoDownloadModelImpl;
+      {required final String id,
+      required final String title,
+      required final Map<String, String?> selectedUrls,
+      required final Map<String, dynamic> responseMap,
+      required final Map<String, String> headers,
+      required final String backgroundImageUrl,
+      required final double downloadedSized,
+      required final double downloadSpeed,
+      required final double downloadProgress,
+      required final DownloadTaskStatus downloadStatus,
+      required final DateTime modifiedTime,
+      required final Map<String, TaskInfo> taskStatus,
+      required final String saveDir,
+      required final List<String> segmentPaths,
+      required final bool isMerged}) = _$VideoDownloadModelImpl;
 
   @override
   String get id;
@@ -400,6 +466,12 @@ abstract class _VideoDownloadModel implements VideoDownloadModel {
   DateTime get modifiedTime;
   @override
   Map<String, TaskInfo> get taskStatus;
+  @override
+  String get saveDir;
+  @override
+  List<String> get segmentPaths;
+  @override
+  bool get isMerged;
   @override
   @JsonKey(ignore: true)
   _$$VideoDownloadModelImplCopyWith<_$VideoDownloadModelImpl> get copyWith =>

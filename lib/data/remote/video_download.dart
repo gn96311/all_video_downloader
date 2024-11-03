@@ -325,20 +325,9 @@ Future<void> mergeSegments(List<String> segmentPaths, String outputFileName) asy
 
 Future<void> cleanupSegmentsAndListFile(List<String> segmentPaths, Directory segmentsDir) async {
   try {
-    // 모든 ts 파일 삭제
-    for (String segmentPath in segmentPaths) {
-      final file = File(segmentPath);
-      if (await file.exists()) {
-        await file.delete();
-        print('Deleted $segmentPath');
-      }
-    }
-
-    // segment_list.txt 파일 삭제
-    final segmentListFile = File('${segmentsDir.path}/segment_list.txt');
-    if (await segmentListFile.exists()) {
-      await segmentListFile.delete();
-      print('Deleted ${segmentListFile.path}');
+    if (await segmentsDir.exists()){
+      await segmentsDir.delete(recursive: true);
+      print('Deleted Directory ${segmentsDir.path}');
     }
   } catch (e) {
     print('Failed to delete segments: $e');
@@ -347,49 +336,59 @@ Future<void> cleanupSegmentsAndListFile(List<String> segmentPaths, Directory seg
 
 //----------------------------------- case3 -------------------------------------------------------
 
-Future<void> mergeSegmentsFuction(String id, List<String> segmentPaths, String outputFileName, WidgetRef ref) async {
+Future<bool> mergeSegmentsFuction(String id, List<String> segmentPaths, String outputFileName, WidgetRef ref) async {
   //TODO: 나중에 저장위치 Download 폴더로 바꿔야함
-  ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.merging, null, null);
   final directory = await getApplicationDocumentsDirectory();
-  final segmentsDir = Directory('${directory.path}/outputPath');
-  if (!segmentsDir.existsSync()) {
-    segmentsDir.createSync();
+  final segmentsDir = Directory('${directory.path}/$id');
+  final outputDir = Directory('${directory.path}/outputPath');
+  if (!outputDir.existsSync()) {
+    outputDir.createSync();
   }
-  String sanitizedFileName = outputFileName.replaceAll(' ', '_');
-  String outputPath = '${segmentsDir.path}/$sanitizedFileName.mp4';
+  String firstSanitizedFileName = sanitizeFileName(outputFileName);
+  String sanitizedFileName = firstSanitizedFileName.replaceAll(' ', '_');
+  String outputPath = '${outputDir.path}/$sanitizedFileName.mp4';
 
-  final segmentListFilePath = '${directory.path}/downloadedSegments/segment_list.txt';
+  final segmentListFilePath = '${directory.path}/$id/segment_list.txt';
   final segmentListFile = File(segmentListFilePath);
   final segmentListContent = segmentPaths.map((path) => "file '$path'").join('\n');
   await segmentListFile.writeAsString(segmentListContent);
 
   final command = "-y -f concat -safe 0 -i $segmentListFilePath -c copy $outputPath";
 
+  final session = await FFmpegKit.execute(command);
+  final returnCode = await session.getReturnCode();
+  final failStackTrace = await session.getFailStackTrace();
+  final logs = await session.getLogs();
 
-  await FFmpegKit.execute(command).then((session) async {
-    final returnCode = await session.getReturnCode();
-    final failStackTrace = await session.getFailStackTrace();
-    final logs = await session.getLogs();
-
-    if (ReturnCode.isSuccess(returnCode)) {
-      print('Video conversion succeeded: $outputPath');
-      ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.complete, null, null);
+  if (ReturnCode.isSuccess(returnCode)) {
+    print('Video conversion succeeded: $outputPath');
+    await cleanupSegmentsAndListFile(segmentPaths, segmentsDir);
+    return true;
+  } else if (ReturnCode.isCancel(returnCode)) {
+    print('Video conversion canceled');
+    try {
       await cleanupSegmentsAndListFile(segmentPaths, segmentsDir);
-      ref.read(VideoDownloadProgressProvider.notifier).deleteDownloadQueue(id);
-    } else if (ReturnCode.isCancel(returnCode)) {
-      ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed, null, null);
-      print('Video conversion canceled');
-      // print(failStackTrace);
-      // logs.forEach((log) {
-      //   print(log.getMessage());
-      // });
-    } else {
-      ref.read(progressProvider.notifier).updateDownloadQueue(id, null, null, null, null, DownloadTaskStatus.failed, null, null);
-      print('Video conversion failed with return code: $returnCode');
-      // print(failStackTrace);
-      // logs.forEach((log) {
-      //   print(log.getMessage());
-      // });
+    } catch (e) {
     }
-  });
+    print(failStackTrace);
+    logs.forEach((log) {
+      print(log.getMessage());
+    });
+    return false;
+  } else {
+    print('Video conversion failed with return code: $returnCode');
+    try {
+      await cleanupSegmentsAndListFile(segmentPaths, segmentsDir);
+    } catch (e) {
+    }
+    print(failStackTrace);
+    logs.forEach((log) {
+      print(log.getMessage());
+    });
+    return false;
+  }
+}
+
+String sanitizeFileName(String fileName) {
+  return fileName.replaceAll(RegExp(r'[\/:*?"<>|.]'), '_');
 }

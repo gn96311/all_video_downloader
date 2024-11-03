@@ -27,6 +27,9 @@ class VideoDownloadProgressNotifier
       downloadStatus: DownloadTaskStatus.enqueued,
       modifiedTime: DateTime.now(),
       taskStatus: {},
+      saveDir: '',
+      segmentPaths: [],
+      isMerged: false,
     );
     final downloadManager = await DownloadManager.create(newVideoDownloadQueue, ref, id);
     final newItem = VideoDownloadItem(videoDownloadModel: newVideoDownloadQueue, downloadManager: downloadManager);

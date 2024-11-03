@@ -2,10 +2,15 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 
 class TaskInfo {
   DownloadTaskStatus status;
-  int progress;
+  int? progress;
 
   TaskInfo({
     required this.status,
-    required this.progress,
+    this.progress,
   });
+
+  @override
+  String toString() {
+    return 'TaskInfo(status: $status, progress: $progress)';
+  }
 }

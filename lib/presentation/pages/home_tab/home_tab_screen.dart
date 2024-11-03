@@ -5,6 +5,7 @@ import 'package:all_video_downloader/core/theme/constant/app_colors.dart';
 import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
 import 'package:all_video_downloader/core/theme/theme_data.dart';
 import 'package:all_video_downloader/data/remote/video_download.dart';
+import 'package:all_video_downloader/presentation/main/provider/bottom_nav_provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/HLS_video_info/HLS_video_info.provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/jwplayer_video_info/jwplayer_video_info.provider.dart';
 import 'package:all_video_downloader/data/entity/internet_bookmark.entity.dart';
@@ -531,9 +532,9 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   }
 
   void _onFabPressed() async {
-    String? title = ref
+    String title = ref
         .watch(HlsVideoInfoProvider)
-        .title;
+        .title!;
     List<String>? hlsUrls = ref
         .watch(HlsVideoInfoProvider)
         .hlsUrls;
@@ -824,6 +825,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     if (selectedUrls.isEmpty){
       return;
     }
-    ref.read(progressProvider.notifier).insertNewDownloadQueue(selectedUrls, responseMap, title, headers);
+    ref.read(bottomNavProvider.notifier).changeNavIndex(BottomNav.progress.index);
+    await ref.read(progressProvider.notifier).insertNewDownloadQueue(selectedUrls, responseMap, title, headers);
   }
 }
