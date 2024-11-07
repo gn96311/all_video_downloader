@@ -36,6 +36,7 @@ dependencies:
   flutter_hls_parser: ^2.0.1
   ffmpeg_kit_flutter: ^6.0.3
   flutter_downloader: ^1.11.8
+  video_thumbnail: ^0.5.3
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:all_video_downloader/core/theme/constant/app_colors.dart';
 import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
 import 'package:all_video_downloader/core/theme/theme_data.dart';
@@ -24,7 +21,6 @@ import 'package:all_video_downloader/presentation/pages/home_tab/provider/intern
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_tab.provider.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/webview_screen.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
-import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -46,7 +42,7 @@ class HomeTabScreen extends ConsumerStatefulWidget {
 class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final TextEditingController _urlTextController = TextEditingController();
+  TextEditingController _urlTextController = TextEditingController();
   final FocusNode _urlFocusNode = FocusNode();
   InAppWebViewController? webViewController;
 
@@ -100,11 +96,19 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Tab ID, URL 초기화
-    final uuid = Uuid();
+    // Tab List State 초기화
     final tabListState = ref.watch(internetTabListProvider);
-    final currentTabId = ref.watch(internetTabListProvider.select((state) => state.currentTabId)) ?? ''; // tabId 변경 확인
-    final currentUrl = currentTabId != null ? ref.read(internetTabListProvider.notifier).getCurrentUrl(currentTabId) : ''; // tabId가 변경되면, 자동으로 currentUrl도 변경.
+    final tabList = tabListState.tabList;
+    final currentTabId = ref.watch(internetTabListProvider.select((state) => state.currentTabId)) ?? '';
+    final currentUrl = currentTabId.isNotEmpty
+        ? ref.watch(internetTabListProvider.notifier).getCurrentUrl(currentTabId)
+        : '';
+
+    ref.listen<String?>(internetTabListProvider.select((state) => state.currentUrl), (previous, next){
+      if (!_urlFocusNode.hasFocus){
+        _urlTextController.text = next!;
+      }
+    });
 
     // Bookmark List, Id 초기화
     final currentBookmarkList = ref.watch(internetBookmarkListProvider); // bookmark List 불러오기
@@ -117,15 +121,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     } else {
       bookmarkId = 'None';
     }
-
-    // currentUrl의 상태가 바뀌면, _urlTextController.text를 next로 바꿈.
-    // 사이트 접속 시, 해당 사이트의 url을 url창에 반영.
-    ref.listen(internetTabListProvider.select((state) => state.currentUrl),
-            (previous, next) {
-          if (next != null && _urlTextController.text != next) {
-            _urlTextController.text = next;
-          }
-        });
 
     ref.listen(internetHistoryListProvider, (previous, next) {
       setState(() {
@@ -229,20 +224,20 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                                       border: InputBorder.none,
                                       contentPadding: EdgeInsets.only(
                                           bottom: 14)),
-                                  onSubmitted: (url) {
-                                    if (tabListState.tabList.isEmpty) {
+                                  onSubmitted: (url) async {
+                                    if (tabList.isEmpty) {
                                       InternetTabEntity addTab = InternetTabEntity(
                                           url: url,
                                           faviconPath: AppIcons.newTabIcon,
                                           title: '새 탭',
-                                          tabId: uuid.v4());
-                                      ref
+                                          tabId: Uuid().v4());
+                                      await ref
                                           .read(
                                           internetTabListProvider.notifier)
                                           .insertInternetTab(addTab);
                                       //_urlTextController.text = ''; should Delete
                                     } else {
-                                      ref.read(internetTabListProvider.notifier).changeCurrentUrl(currentTabId, url);
+                                      await ref.read(internetTabListProvider.notifier).changeCurrentUrl(currentTabId, url);
                                     }
                                   },
                                 )),
@@ -262,7 +257,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                                           .notifier)
                                           .deleteInternetBookmark(bookmarkId!);
                                     } else {
-                                      String newBookmarkId = uuid.v4();
+                                      String newBookmarkId = Uuid().v4();
                                       InternetTabModel nowTabInformation = ref
                                           .watch(internetTabListProvider)
                                           .tabList
@@ -315,7 +310,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                             url: '',
                             faviconPath: AppIcons.newTabIcon,
                             title: '새 탭',
-                            tabId: uuid.v4());
+                            tabId: Uuid().v4());
                         ref
                             .read(internetTabListProvider.notifier)
                             .insertInternetTab(newTab);
@@ -495,11 +490,11 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
                     InternetTabModel e = entry.value;
                     return InternetTabWidget(
                       key: ValueKey(e.tabId),
-                        title: e.title,
-                        url: e.url,
-                        faviconPath: e.faviconPath,
-                        tabId: e.tabId,
-                    urlTextEditingController: _urlTextController,);
+                      title: e.title,
+                      url: e.url,
+                      faviconPath: e.faviconPath,
+                      tabId: e.tabId,
+                      urlTextEditingController: _urlTextController,);
                   }).toList(),
                 )
               ],
@@ -547,8 +542,6 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
 
     await processGetStreamFunction(context, hlsUrls, jwplayerUrls, headers, title);
     //TODO: 다른 사이트의 영상도 다운로드 되는지 확인해야함.(유튜브, 인스타, 기타 다른 사이트 포함)
-    //TODO: 영상 제목 잘 뜨는지 확인해야함.(제목별로 다른 이름으로 다운되게 해야함, 사이트별 아님.)
-    //TODO: 영상의 용량과 converting 과정을 알고, progress에 반영해야함
     // TODO: 영상이 m3u8 형식이 아닌 경우를 구현해야함.
   }
 
@@ -808,7 +801,9 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     if (selectedUrls.isEmpty){
       return;
     }
-    await convertVideo(selectedUrls, title: title);
+    print('responseMap: $responseMap');
+    print('selectedUrls: $selectedUrls');
+    ref.read(bottomNavProvider.notifier).changeNavIndex(BottomNav.progress.index);
   }
 
   //case 2
@@ -825,6 +820,7 @@ class _HomeTabScreenState extends ConsumerState<HomeTabScreen> {
     if (selectedUrls.isEmpty){
       return;
     }
+    print('case2 selectedUrls: $selectedUrls');
     ref.read(bottomNavProvider.notifier).changeNavIndex(BottomNav.progress.index);
     await ref.read(progressProvider.notifier).insertNewDownloadQueue(selectedUrls, responseMap, title, headers);
   }

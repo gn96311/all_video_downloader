@@ -35,7 +35,6 @@ class InternetTabNotifier extends StateNotifier<InternetTabState> {
       var updatedTab = updatedTabs[tabIndex].copyWith(url: newUrl);
       updatedTabs[tabIndex] = updatedTab;
       state = state.copyWith(tabList: updatedTabs, currentUrl: newUrl);
-      saveLastTabInfo(tabId, newUrl);
 
       final localStorage = await Hive.openBox<InternetTabEntity>(_internetTabDB);
       final tabKey = localStorage.keys.firstWhere(

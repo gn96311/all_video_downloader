@@ -7,7 +7,6 @@ import 'package:all_video_downloader/data/entity/internet_history.entity.dart';
 import 'package:all_video_downloader/data/entity/internet_tab.entity.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/task_info.dart';
-import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/download_monitor.dart';
 import 'package:all_video_downloader/presentation/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';

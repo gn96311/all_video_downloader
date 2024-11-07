@@ -43,7 +43,6 @@ class _ProgressWidgetState extends ConsumerState<ProgressWidget> {
     ref.listen<VideoDownloadModel>(progressProvider.select((state) => state.downloadInformationList.firstWhere((model) => model.id == widget.uuid, orElse: () => VideoDownloadModel.empty())), (previous, next) async {
       final videoModel = next!;
       if (!videoModel.isMerged){
-        print('_isMerging: $_isMerging');
         final title = videoModel.title;
         final segmentPaths = videoModel.segmentPaths;
         double totalProgress = 0.0;
@@ -68,9 +67,6 @@ class _ProgressWidgetState extends ConsumerState<ProgressWidget> {
           await ref.read(progressProvider.notifier).updateDownloadQueue(videoModel.id, null, totalDownloadedSize, downloadSpeed, overallProgress, null, null, null, null, null, null);
         }
 
-        // TODO: taskStatus.updateAll을 추가했으니, 확인해보고. 안되면 초기의 10개 값 정도만 null로 초기화 되닌까, 초기값 null 마지막 값 complete 일때는 이름을 써서 다운로드 됬는지 체크하는걸로 ㄱㄱ
-        // TODO: 아니면 allTaskCompleted를 하지 말고, 다운로드된 segment수와 taskStatus의 수가 같으면 진행하는걸로 ㄱㄱ
-
         final allTaskCompleted = videoModel.taskStatus.values.every((taskInfo) =>
         taskInfo.status == DownloadTaskStatus.complete ||
             taskInfo.status == DownloadTaskStatus.canceled ||
@@ -79,9 +75,8 @@ class _ProgressWidgetState extends ConsumerState<ProgressWidget> {
         final isAllTaskComplete = videoModel.taskStatus.values.every((taskInfo) =>
         taskInfo.status == DownloadTaskStatus.complete);
 
+        // Segment의 개수와, 파일 개수를 비교하여 파일 개수가 Segment보다 많으면 True
         bool isCountEqual = await isFileCountEqualToStatusCount(videoModel.saveDir, videoModel.taskStatus);
-
-        // TODO: 1103, 다운로드 문제 없이 되는거 확인함. 연속 다운로드 문제 없는지 확인 필요.
 
         if (isCountEqual && !_isMerging){
           _isMerging = true;
@@ -101,7 +96,6 @@ class _ProgressWidgetState extends ConsumerState<ProgressWidget> {
           await ref.read(progressProvider.notifier).updateDownloadQueue(videoModel.id, null, null, null, null, DownloadTaskStatus.failed, null, null, null, null, true);
         }
       }
-      // TODO: 2개 연속 다운로드, 다운 중 정지/재다운 확인, 다운로드 잘 되는지 확인.
     });
 
     final progressState = ref.watch(progressProvider);

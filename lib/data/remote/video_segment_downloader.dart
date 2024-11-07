@@ -1,9 +1,7 @@
-// uuid를 이름으로 가지는 폴더를 만들고, 그 안에 다운로드 해야함.
 import 'dart:async';
 import 'dart:io';
 
 import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
-import 'package:all_video_downloader/data/remote/video_download.dart';
 import 'package:all_video_downloader/domain/model/video_download/video_download_model.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
 import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/task_info.dart';

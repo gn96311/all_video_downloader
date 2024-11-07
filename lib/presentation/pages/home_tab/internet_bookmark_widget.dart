@@ -27,6 +27,7 @@ class InternetBookmarkWidget extends ConsumerWidget {
               debugPrint(tabId);
               ref.read(internetTabListProvider.notifier).setCurrentTabId(tabId);
               ref.read(internetTabListProvider.notifier).changeCurrentUrl(tabId, url);
+              ref.read(internetTabListProvider.notifier).saveLastTabInfo(tabId, url);
               Navigator.pop(context);
             },
           ),

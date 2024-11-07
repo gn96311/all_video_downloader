@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:all_video_downloader/core/theme/constant/app_icons.dart';
 import 'package:all_video_downloader/core/theme/constant/app_scripts.dart';
 import 'package:all_video_downloader/data/entity/internet_history.entity.dart';
+import 'package:all_video_downloader/data/entity/internet_tab.entity.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_history/internet_history.provider.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/internet_tab.provider.dart';
 import 'package:all_video_downloader/presentation/pages/home_tab/provider/webview_controller.provider.dart';
@@ -12,9 +14,10 @@ import 'package:all_video_downloader/presentation/pages/progress_tab/provider/jw
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:uuid/uuid.dart';
+
+// TODO: sup 사이트 parsing 확인 및 여타 사이트(m3u8로 다운받는 사이트, ex: 트위터 등등) 다운로드 가능하게 해야함.
 
 class WebviewScreen extends ConsumerStatefulWidget {
   String inputUrl;
@@ -102,8 +105,8 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
   Widget build(BuildContext context) {
     var inputUrl = ensureHttpPrefix(widget.inputUrl);
     String? previousUrl;
-    ref.listen(internetTabListProvider, (previous, next) {
-      if (previous?.currentUrl != next.currentUrl) {
+    ref.listen(internetTabListProvider.select((state) => state.currentUrl), (previous, next) {
+      if (previous != next) {
         ref.read(JwPlayerVideoInfoProvider.notifier).state = JwplayerVideoInfo(inputUrls: [], headers: {});
         ref.read(HlsVideoInfoProvider.notifier).state = HlsVideoInfo(hlsUrls: [], title: '');
         m3u8UrlList!.clear();
@@ -129,11 +132,51 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                           controller;
                       widget.onWebViewCreated(controller);
                     },
+                    onCreateWindow: (controller, action) async {
+                      final isConfirmed = await showDialog<bool>(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('새 탭을 여시겠습니까?'),
+                            actions: [
+                              TextButton(
+                                child: Text("취소"),
+                                onPressed: () => Navigator.pop(context, false),
+                              ),
+                              TextButton(
+                                child: Text("확인"),
+                                onPressed: () => Navigator.pop(context, true),
+                              ),
+                            ],
+                          );
+                        }
+                      );
+
+                      if (isConfirmed == true) {
+                        final newTabId = Uuid().v4();
+                        final newUrl = action.request.url.toString();
+
+                        InternetTabEntity addTab = InternetTabEntity(
+                          url: newUrl,
+                          faviconPath: AppIcons.newTabIcon,
+                          title: '새 탭',
+                          tabId: newTabId,
+                        );
+
+                        await ref.read(internetTabListProvider.notifier).insertInternetTab(addTab);
+                        ref.read(internetTabListProvider.notifier).setCurrentTabId(newTabId);
+                        return true;
+                      }
+
+                      return false;
+                    },
                     onLoadStart: (controller, url) async {
-                      ref
+                      await ref
                           .read(internetTabListProvider.notifier)
                           .changeCurrentUrl(
                               widget.currentTabId, url.toString());
+                      ref.read(internetTabListProvider.notifier).saveLastTabInfo(widget.currentTabId, url.toString());
                       setState(() {
                         this.url = url.toString();
                       });
@@ -142,6 +185,7 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                       if (url.toString() == previousUrl) {
                         return;
                       }
+                      await ref.read(internetTabListProvider.notifier).saveLastTabInfo(widget.currentTabId, url.toString());
                       previousUrl = url.toString();
                       setState(() {
                         this.url = url.toString();
@@ -150,25 +194,16 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                       if (FocusScope.of(context).hasFocus) {
                         FocusScope.of(context).unfocus();
                       }
-                      String? title = await controller.getTitle();
-                      final favicons = await controller.getFavicons();
-                      final faviconUrl = favicons.isNotEmpty
-                          ? favicons.first.url.toString()
-                          : '';
-                      final metaDescription = 'example'; //TODO: descript 얻을 수 있도록 수정해야함.
-                      //await controller.evaluateJavascript(source: "document.querySelector('meta[name=\"description\"]').content;");
-                      title = title?.isNotEmpty == true ? title : 'No Title';
-                      String entireTitle;
-                      if (metaDescription == null) {
-                        entireTitle = '$title';
-                      } else {
-                        entireTitle = '$title - $metaDescription';
-                      }
+
+                      Map<String, dynamic> siteInformation = await getSiteInformation(controller);
+                      String? title = siteInformation['title'];
+                      print('title: $title');
+                      String faviconUrl = siteInformation['faviconUrl'];
 
                       if (mounted) {
                         ref.read(HlsVideoInfoProvider.notifier).state = HlsVideoInfo(
                                 hlsUrls: m3u8UrlList,
-                                title: entireTitle,);
+                                title: title,);
                       }
 
                       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -179,7 +214,7 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                                 widget.currentTabId, title ?? '', faviconUrl);
                         final InternetHistoryEntity internetHistoryEntity =
                             InternetHistoryEntity(
-                                title: entireTitle!,
+                                title: title!,
                                 url: url.toString(),
                                 faviconPath: faviconUrl,
                                 VisitedTime: DateTime.now()
@@ -199,8 +234,41 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                     },
                     shouldOverrideUrlLoading:
                         (controller, navigationAction) async {
-                      var uri = navigationAction.request.url!;
+                      final currentUri = Uri.parse(url);
+                      final targetUri = navigationAction.request.url!;
 
+                      if (currentUri.host != targetUri.host) {
+                        final isConfirmed = await showDialog<bool>(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text("다른 사이트로 이동하시겠습니까?"),
+                              content: Text("${targetUri.host}로 이동하려고 합니다."),
+                              actions: [
+                                TextButton(
+                                  child: Text("취소"),
+                                  onPressed: () => Navigator.pop(context, false),
+                                ),
+                                TextButton(
+                                  child: Text("확인"),
+                                  onPressed: () => Navigator.pop(context, true),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (isConfirmed == true) {
+                          // 사용자가 확인한 경우에만 새 URL로 이동 허용
+                          return NavigationActionPolicy.ALLOW;
+                        } else {
+                          // 사용자가 취소를 누르면 이동하지 않음
+                          return NavigationActionPolicy.CANCEL;
+                        }
+                      }
+
+                      var uri = navigationAction.request.url!;
                       if (![
                         'http',
                         'https',
@@ -222,9 +290,19 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                     onLoadError: (controller, url, code, message) {
                       pullToRefreshController.endRefreshing();
                     },
-                    onProgressChanged: (controller, progress) {
+                    onProgressChanged: (controller, progress) async {
                       if (progress == 100) {
                         pullToRefreshController.endRefreshing();
+
+                        Map<String, dynamic> siteInformation = await getSiteInformation(controller);
+                        String? title = siteInformation['title'];
+                        print('title: $title');
+                        String faviconUrl = siteInformation['faviconUrl'];
+
+                        await ref
+                            .read(internetTabListProvider.notifier)
+                            .setPageDetails(
+                            widget.currentTabId, title ?? '', faviconUrl);
                       }
                       setState(() {
                         this.progress = progress / 100;
@@ -232,7 +310,6 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
                     },
                     onLoadResource: (controller, resource) {
                     },
-                    // resource 로드 시간 불일치 해결해야함.
                     // onResourceLoad로는 안되는 request intercept를 되게함.
                     androidShouldInterceptRequest: (controller, request) async {
                       final getUrl = request.url.toString();
@@ -306,5 +383,25 @@ class _WebviewScreenState extends ConsumerState<WebviewScreen> {
     } else {
       return url;
     }
+  }
+
+  Future<Map<String, dynamic>> getSiteInformation(InAppWebViewController controller) async {
+    Map<String, dynamic> siteInformation = {};
+    String? title = await controller.getTitle();
+    List<Favicon> favicons = await controller.getFavicons();
+    final faviconUrl = favicons.isNotEmpty
+        ? favicons.first.url.toString()
+        : '';
+    if (title?.isNotEmpty == true){
+      title = title;
+    } else{
+      Future.delayed(Duration(milliseconds: 1000));
+      title = await controller.getTitle();
+    }
+    siteInformation['title'] = title;
+    siteInformation['faviconUrl'] = faviconUrl;
+
+
+    return siteInformation;
   }
 }

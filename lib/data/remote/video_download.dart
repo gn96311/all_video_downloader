@@ -2,17 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:all_video_downloader/core/utils/rest_client/rest_client.dart';
-import 'package:all_video_downloader/data/remote/flutter_donwloader.dart';
-import 'package:all_video_downloader/presentation/pages/progress_tab/provider/progress_provider/progress_provider.provider.dart';
-import 'package:all_video_downloader/presentation/pages/progress_tab/provider/video_download_progress/video_download_progress.provider.dart';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_hls_parser/flutter_hls_parser.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 
 //----------------------------------- case1 & 공통 ------------------------------------------------
 
@@ -260,9 +255,6 @@ Future<void> downloadAndMergeSegments(List<String> segmentUrls, String outputFil
     urlToSegmentPathMap[url] = segmentNameWithNewExtension;
   }
 
-  // final segmentDownloader = SegmentDownloader(urlToSegmentPathMap: urlToSegmentPathMap, headers: headers, saveDir: segmentsDir.path, outputFileName: outputFileName);
-  // await segmentDownloader.startDownload(ref);
-
   await mergeSegments(segmentPaths, outputFileName);
 }
 
@@ -280,21 +272,6 @@ Future<void> mergeSegments(List<String> segmentPaths, String outputFileName) asy
   final segmentListFile = File(segmentListFilePath);
   final segmentListContent = segmentPaths.map((path) => "file '$path'").join('\n');
   await segmentListFile.writeAsString(segmentListContent);
-
-  // for (String segmentPath in segmentPaths) {
-  //   await FFprobeKit.getMediaInformation(segmentPath).then((session) async {
-  //     final information = await session.getMediaInformation();
-  //     if (information != null) {
-  //       print('File: $segmentPath');
-  //       print('Duration: ${information.getDuration()}');
-  //       print('Format: ${information.getFormat()}');
-  //       print('Size: ${information.getSize()}');
-  //       print('Bitrate: ${information.getBitrate()}');
-  //     } else {
-  //       print('Failed to retrieve media information for $segmentPath');
-  //     }
-  //   });
-  // }
 
   final command = "-f concat -safe 0 -i $segmentListFilePath -c copy $outputPath";
 
@@ -339,10 +316,11 @@ Future<void> cleanupSegmentsAndListFile(List<String> segmentPaths, Directory seg
 Future<bool> mergeSegmentsFuction(String id, List<String> segmentPaths, String outputFileName, WidgetRef ref) async {
   //TODO: 나중에 저장위치 Download 폴더로 바꿔야함
   final directory = await getApplicationDocumentsDirectory();
+  final externalDirectory = await getExternalStorageDirectory();
   final segmentsDir = Directory('${directory.path}/$id');
-  final outputDir = Directory('${directory.path}/outputPath');
+  final outputDir = Directory('${externalDirectory!.path}/Download/movie');
   if (!outputDir.existsSync()) {
-    outputDir.createSync();
+    outputDir.createSync(recursive: true);
   }
   String firstSanitizedFileName = sanitizeFileName(outputFileName);
   String sanitizedFileName = firstSanitizedFileName.replaceAll(' ', '_');
